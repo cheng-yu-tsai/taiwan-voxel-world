@@ -19,9 +19,9 @@
 
 ### 目前狀態
 
-- **階段：** 概念規劃與網站發布準備。
+- **階段：** 概念規劃；GitHub Pages 概念展示站已發布。
 - **已完成：** 初步確立遊戲方向與核心特色；靜態概念首頁、README 與 Pages 部署工作流程已在本機備妥。
-- **尚未完成：** GitHub 遠端 repository 尚未建立或連結，網站尚未發布；地圖資料與比例、遊戲規則、技術選型、原型、素材製作及實際遊戲開發也尚未開始。
+- **尚未完成：** 地圖資料與比例、遊戲規則、技術選型、原型、素材製作及實際遊戲開發尚未開始；目前上線的是概念展示站，不是可遊玩的遊戲。
 
 ### 已完成的項目
 
@@ -72,6 +72,7 @@
 - [x] 建立靜態概念首頁（`site/index.html`）。
 - [x] 新增 GitHub Actions Pages 部署工作流程（`.github/workflows/deploy.yml`）。
 - [x] 新增專案 README 與 Pages 設定說明。
-- [ ] 建立並連結 GitHub 遠端 repository。
-- [ ] 在 repository 設定 Pages 使用 GitHub Actions，推送 `main` 並確認首次部署成功。
+- [x] 建立公開 GitHub repository 並推送專案。
+- [x] 設定 Pages 使用 GitHub Actions，首次部署成功；網站可於 https://cheng-yu-tsai.github.io/taiwan-voxel-world/ 瀏覽。
+
 
