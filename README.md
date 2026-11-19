@@ -1,11 +1,28 @@
 # 島嶼方塊
 
-一款以《Minecraft》式方塊操作為參考、以縮小版台灣與離島為地圖的 3D 沙盒建造遊戲構想。
+一款以《Minecraft》式方塊操作為參考、以縮小版台灣與離島為地圖的 3D 沙盒建造遊戲。GitHub Pages 上有可操作的瀏覽器原型，遊戲持續開發中。
 
-**概念展示站：** https://cheng-yu-tsai.github.io/taiwan-voxel-world/
+**目前遊玩：** https://cheng-yu-tsai.github.io/taiwan-voxel-world/
 
 - [遊戲願景與路線圖](knowledge/plan.md)
-- [網站首頁](site/index.html)
+- [遊戲入口](site/index.html)
+
+## 目前原型
+
+- WASD 移動、空白鍵跳躍、滑鼠轉向；左鍵挖掘，右鍵放置方塊。
+- 以物品欄選擇台灣街景方塊，在台中海岸街角自由建造。
+- 從交通地圖搭船或搭飛機前往本島與離島。
+- 方塊修改會存在瀏覽器的 localStorage；設定可調整滑鼠靈敏度與畫面品質。
+
+## 保持好修改
+
+- `site/game/config.js`：島嶼位置、地形種類、方塊材質、操作速度與儲存版本。
+- `site/game/world.js`：方塊資料、島嶼地形生成、街景範例、分塊渲染與存檔。
+- `site/game/player.js`：第一人稱移動、視角與跳躍。
+- `site/game/ui.js`：物品欄、交通地圖、設定和操作提示。
+- `site/game/main.js`：場景燈光、渲染器，以及各模組的組合。
+
+遊戲用 Three.js ES modules，版本固定於 `site/index.html` 的 import map；網站不需要建置步驟。
 
 ## GitHub Pages
 

@@ -1,0 +1,301 @@
+import * as THREE from 'three';
+import { BLOCKS, CONFIG_VERSION, ISLANDS, WORLD_CONFIG } from './config.js';
+
+const faces = [
+  { n: [1,0,0], corners: [[1,0,0],[1,1,0],[1,1,1],[1,0,1]] },
+  { n: [-1,0,0], corners: [[0,0,1],[0,1,1],[0,1,0],[0,0,0]] },
+  { n: [0,1,0], corners: [[0,1,1],[1,1,1],[1,1,0],[0,1,0]] },
+  { n: [0,-1,0], corners: [[0,0,0],[1,0,0],[1,0,1],[0,0,1]] },
+  { n: [0,0,1], corners: [[1,0,1],[1,1,1],[0,1,1],[0,0,1]] },
+  { n: [0,0,-1], corners: [[0,0,0],[0,1,0],[1,1,0],[1,0,0]] },
+];
+const shade = [0.76, 0.76, 1, 0.62, 0.88, 0.68];
+const keyOf = (x,y,z) => `${x},${y},${z}`;
+const parseKey = key => key.split(',').map(Number);
+
+function pointInPolygon(x,z,polygon){
+  let inside = false;
+  for(let i=0,j=polygon.length-1;i<polygon.length;j=i++){
+    const [xi,zi]=polygon[i], [xj,zj]=polygon[j];
+    const crosses = ((zi>z)!==(zj>z)) && (x<(xj-xi)*(z-zi)/(zj-zi+Number.EPSILON)+xi);
+    if(crosses) inside=!inside;
+  }
+  return inside;
+}
+
+export class VoxelWorld {
+  constructor(scene,onChange=()=>{}){
+    this.scene=scene;
+    this.onChange=onChange;
+    this.blocks=new Map();
+    this.chunks=new Map();
+    this.topHeights=new Map();
+    this.colorCache=new Map();
+    this.saveTimer=0;
+    this.islandById=new Map(ISLANDS.map(island=>[island.id,island]));
+    this.colorMaterial=new THREE.MeshLambertMaterial({vertexColors:true,flatShading:true});
+    this.ocean=new THREE.Mesh(new THREE.PlaneGeometry(180,180),new THREE.MeshBasicMaterial({color:'#4faaa5'}));
+    this.ocean.rotation.x=-Math.PI/2;
+    this.ocean.position.y=WORLD_CONFIG.seaLevel;
+    this.ocean.receiveShadow=true;
+    this.scene.add(this.ocean);
+  }
+
+  async generate(){
+    this.blocks.clear();
+    for(const island of ISLANDS) this.generateIsland(island);
+    this.seedTaiwanStreet();
+    this.restoreSave();
+    this.reindexColumns();
+    this.rebuildAll();
+    this.onChange({count:this.blocks.size,saved:false});
+  }
+
+  generateIsland(island){
+    const addShape=shape=>{
+      let minX,maxX,minZ,maxZ;
+      if(island.type==='polygon'){
+        minX=Math.floor(Math.min(...island.shape.map(p=>p[0]))); maxX=Math.ceil(Math.max(...island.shape.map(p=>p[0])));
+        minZ=Math.floor(Math.min(...island.shape.map(p=>p[1]))); maxZ=Math.ceil(Math.max(...island.shape.map(p=>p[1])));
+      }else{
+        minX=Math.floor(shape.x-shape.rx); maxX=Math.ceil(shape.x+shape.rx);
+        minZ=Math.floor(shape.z-shape.rz); maxZ=Math.ceil(shape.z+shape.rz);
+      }
+      for(let x=minX;x<=maxX;x++) for(let z=minZ;z<=maxZ;z++){
+        if(!this.isInside(island,x+.5,z+.5,shape)) continue;
+        const height=this.terrainHeight(island,x+.5,z+.5);
+        for(let y=0;y<height;y++){
+          const top=y===height-1;
+          const surface=top&&island.id==='penghu'?'stone':top?'grass':'soil';
+          this.blocks.set(keyOf(x,y,z),surface);
+        }
+      }
+    };
+    if(island.type==='cluster') island.shape.forEach(addShape);
+    else addShape(island.shape);
+  }
+
+  isInside(island,x,z,shape=island.shape){
+    if(island.type==='polygon') return pointInPolygon(x,z,island.shape);
+    if(island.type==='cluster') return ((x-shape.x)/shape.rx)**2+((z-shape.z)/shape.rz)**2<=1;
+    return ((x-shape.x)/shape.rx)**2+((z-shape.z)/shape.rz)**2<=1;
+  }
+
+  terrainHeight(island,x,z){
+    if(island.id==='main'){
+      const ridge=0.75+Math.sin(z*.21)*.82+Math.sin(z*.07)*.55;
+      const distance=Math.abs(x-ridge);
+      const range=Math.exp(-(distance*distance)/19);
+      const foothill=Math.exp(-(distance*distance)/73);
+      const variation=Math.sin(x*1.7+z*.62)*.55+Math.cos(z*.83-x*.38)*.4;
+      return Math.max(1,Math.min(15,1+Math.round(10.5*range+2.2*foothill+variation)));
+    }
+    if(island.id==='penghu') return 2+Math.round(Math.max(0,Math.sin(x*1.3+z)*.8));
+    if(island.id==='matsu') return 2+Math.round(Math.max(0,Math.sin(z*1.2-x)*.8));
+    return 2+Math.round(Math.max(0,Math.sin(x*.8+z*.35)*.85));
+  }
+
+  seedTaiwanStreet(){
+    // A compact, level building pad keeps the first play session friendly.
+    for(let x=-7;x<=-2;x++) for(let z=-4;z<=5;z++){
+      for(let y=1;y<32;y++) this.blocks.delete(keyOf(x,y,z));
+      this.blocks.set(keyOf(x,1,z),(x===-5||x===-4)?'road':'concrete');
+    }
+    this.buildShop(-7,-2,2,3,'brick','roof','sign');
+    this.buildShop(-3,2,2,3,'wood','roof','sign');
+    // A small coast-side row of wave breakers makes the Taiwan shoreline legible.
+    for(let z=-2;z<=2;z++){
+      const x=-8;
+      this.blocks.set(keyOf(x,1,z),'wave');
+    }
+  }
+
+  buildShop(x0,z0,width,depth,wall,roof,sign){
+    const floorY=2, wallTop=4;
+    for(let x=x0;x<x0+width;x++) for(let z=z0;z<z0+depth;z++){
+      this.blocks.set(keyOf(x,floorY,z),'concrete');
+      for(let y=floorY+1;y<=wallTop;y++){
+        const edge=x===x0||x===x0+width-1||z===z0||z===z0+depth-1;
+        if(edge) this.blocks.set(keyOf(x,y,z),wall);
+      }
+      this.blocks.set(keyOf(x,wallTop+1,z),roof);
+    }
+    // Bright signs face the street. Leave one doorway open in each facade.
+    const doorX=x0+Math.floor(width/2);
+    this.blocks.delete(keyOf(doorX,floorY+1,z0+depth-1));
+    this.blocks.delete(keyOf(doorX,floorY+2,z0+depth-1));
+    this.blocks.set(keyOf(x0+Math.floor(width/2),wallTop+1,z0+depth-1),sign);
+  }
+
+  restoreSave(){
+    try{
+      const raw=localStorage.getItem(WORLD_CONFIG.saveKey);
+      if(!raw) return;
+      const save=JSON.parse(raw);
+      if(save.version!==CONFIG_VERSION||!Array.isArray(save.blocks)) return;
+      this.blocks=new Map(save.blocks.filter(entry=>Array.isArray(entry)&&entry.length===2&&typeof entry[0]==='string'&&typeof entry[1]==='string'));
+    }catch(error){
+      console.warn('Could not restore saved voxel world:',error);
+      this.onChange({message:'讀取存檔失敗，已建立新世界'});
+    }
+  }
+
+  reindexColumns(){
+    this.topHeights.clear();
+    for(const key of this.blocks.keys()){
+      const [x,y,z]=parseKey(key), column=`${x},${z}`;
+      if(!this.topHeights.has(column)||this.topHeights.get(column)<y) this.topHeights.set(column,y);
+    }
+  }
+
+  getGroundHeight(x,z){
+    return this.topHeights.get(`${Math.floor(x)},${Math.floor(z)}`) ?? null;
+  }
+
+  getBlockCount(){return this.blocks.size;}
+  getBlock(key){return this.blocks.get(key);}
+  getChunkKey(x,z){return `${Math.floor(x/WORLD_CONFIG.chunkSize)},${Math.floor(z/WORLD_CONFIG.chunkSize)}`;}
+
+  setBlock(x,y,z,type){
+    const coords=[Math.floor(x),Math.floor(y),Math.floor(z)];
+    const key=keyOf(...coords);
+    if(this.blocks.has(key)) return false;
+    this.blocks.set(key,type);
+    const column=`${coords[0]},${coords[2]}`;
+    if(!this.topHeights.has(column)||coords[1]>this.topHeights.get(column))this.topHeights.set(column,coords[1]);
+    this.rebuildAround(...coords);
+    this.scheduleSave();
+    return true;
+  }
+
+  removeBlock(key){
+    if(!this.blocks.has(key)) return null;
+    const [x,y,z]=parseKey(key), type=this.blocks.get(key);
+    this.blocks.delete(key);
+    const column=`${x},${z}`;
+    if(this.topHeights.get(column)===y){
+      let next=null;
+      for(let check=y-1;check>=0;check--) if(this.blocks.has(keyOf(x,check,z))){next=check;break;}
+      if(next===null) this.topHeights.delete(column); else this.topHeights.set(column,next);
+    }
+    this.rebuildAround(x,y,z);
+    this.scheduleSave();
+    return {x,y,z,type};
+  }
+
+  rebuildAround(x,y,z){
+    const cx=Math.floor(x/WORLD_CONFIG.chunkSize), cz=Math.floor(z/WORLD_CONFIG.chunkSize);
+    this.rebuildChunk(cx,cz);
+    if(x%WORLD_CONFIG.chunkSize===0) this.rebuildChunk(cx-1,cz);
+    if((x+1)%WORLD_CONFIG.chunkSize===0) this.rebuildChunk(cx+1,cz);
+    if(z%WORLD_CONFIG.chunkSize===0) this.rebuildChunk(cx,cz-1);
+    if((z+1)%WORLD_CONFIG.chunkSize===0) this.rebuildChunk(cx,cz+1);
+  }
+
+  rebuildAll(){
+    for(const chunk of this.chunks.values()){this.scene.remove(chunk);chunk.geometry.dispose();}
+    this.chunks.clear();
+    const keys=new Set();
+    for(const key of this.blocks.keys()){
+      const [x,,z]=parseKey(key);keys.add(this.getChunkKey(x,z));
+    }
+    for(const chunkKey of keys){const [cx,cz]=chunkKey.split(',').map(Number);this.rebuildChunk(cx,cz);}
+  }
+
+  rebuildChunk(cx,cz){
+    const chunkKey=`${cx},${cz}`, previous=this.chunks.get(chunkKey);
+    if(previous){this.scene.remove(previous);previous.geometry.dispose();this.chunks.delete(chunkKey);}
+    const xMin=cx*WORLD_CONFIG.chunkSize, xMax=xMin+WORLD_CONFIG.chunkSize;
+    const zMin=cz*WORLD_CONFIG.chunkSize, zMax=zMin+WORLD_CONFIG.chunkSize;
+    const positions=[],normals=[],colors=[],indices=[],faceBlocks=[];
+    let blockCount=0;
+    for(const [key,type] of this.blocks){
+      const [x,y,z]=parseKey(key);
+      if(x<xMin||x>=xMax||z<zMin||z>=zMax) continue;
+      blockCount++;
+      const palette=BLOCKS.find(block=>block.id===type)||BLOCKS[1];
+      const faceColors=this.getFaceColors(type,palette);
+      for(let f=0;f<faces.length;f++){
+        const face=faces[f], [nx,ny,nz]=face.n;
+        if(this.blocks.has(keyOf(x+nx,y+ny,z+nz))) continue;
+        const start=positions.length/3;
+        for(const [vx,vy,vz] of face.corners){
+          positions.push(x+vx,y+vy,z+vz);
+          normals.push(nx,ny,nz);
+          const color=faceColors[f];colors.push(color.r,color.g,color.b);
+        }
+        indices.push(start,start+1,start+2,start,start+2,start+3);
+        faceBlocks.push(key);
+      }
+    }
+    if(!blockCount) return;
+    const geometry=new THREE.BufferGeometry();
+    geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+    geometry.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));
+    geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
+    geometry.setIndex(indices);
+    geometry.userData.faceBlocks=faceBlocks;
+    geometry.computeBoundingSphere();
+    const mesh=new THREE.Mesh(geometry,this.colorMaterial);
+    mesh.castShadow=true;mesh.receiveShadow=true;
+    mesh.userData.chunkKey=chunkKey;
+    this.scene.add(mesh);this.chunks.set(chunkKey,mesh);
+  }
+
+  getFaceColors(type,palette){
+    if(this.colorCache.has(type)) return this.colorCache.get(type);
+    const base=new THREE.Color(palette.color), side=new THREE.Color(palette.sideColor||palette.color);
+    const colorFaces=faces.map((face,index)=>{
+      const color=index===2||index===3?base.clone():side.clone();
+      return color.multiplyScalar(shade[index]);
+    });
+    this.colorCache.set(type,colorFaces);return colorFaces;
+  }
+
+  raycast(raycaster){
+    const hits=raycaster.intersectObjects([...this.chunks.values()],false);
+    const hit=hits[0];
+    if(!hit||hit.distance>7) return null;
+    const key=hit.object.geometry.userData.faceBlocks[Math.floor(hit.faceIndex/2)];
+    if(!key) return null;
+    return {key,distance:hit.distance,normal:hit.face.normal.clone(),point:hit.point,type:this.blocks.get(key)};
+  }
+
+  getSpawnPoint(islandId){
+    const island=this.islandById.get(islandId)||ISLANDS[0];
+    const start=island.spawn;
+    const baseX=Math.floor(start.x),baseZ=Math.floor(start.z);
+    for(let radius=0;radius<9;radius++){
+      for(let dx=-radius;dx<=radius;dx++) for(let dz=-radius;dz<=radius;dz++){
+        if(Math.abs(dx)!==radius&&Math.abs(dz)!==radius) continue;
+        const x=baseX+dx,z=baseZ+dz;
+        const y=this.getGroundHeight(x,z);
+        if(y!==null) return {x:x+.5,y:y+1,z:z+.5,island};
+      }
+    }
+    const y=this.getGroundHeight(baseX,baseZ)??1;
+    return {x:baseX+.5,y:y+1,z:baseZ+.5,island};
+  }
+
+  scheduleSave(){
+    clearTimeout(this.saveTimer);
+    this.onChange({count:this.blocks.size,saved:false});
+    this.saveTimer=setTimeout(()=>{
+      try{
+        localStorage.setItem(WORLD_CONFIG.saveKey,JSON.stringify({version:CONFIG_VERSION,blocks:[...this.blocks]}));
+        this.onChange({count:this.blocks.size,saved:true});
+      }catch(error){
+        console.warn('Could not save voxel world:',error);
+        this.onChange({message:'儲存空間不足，請匯出或重設世界'});
+      }
+    },220);
+  }
+
+  reset(){
+    clearTimeout(this.saveTimer);
+    localStorage.removeItem(WORLD_CONFIG.saveKey);
+    this.generate();
+  }
+
+  getMeshes(){return [...this.chunks.values()];}
+}
