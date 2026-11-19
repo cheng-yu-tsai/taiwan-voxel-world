@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10231f">
+  <meta name="description" content="一座可以自由探索、建造、一起生活的台灣方塊世界。">
+  <title>島嶼方塊 — 台灣沙盒世界</title>
+  <style>
+    :root{color-scheme:dark;--ink:#f7f2df;--muted:#b7c4b5;--mint:#a9dbad;--sun:#f6c66b;--bg:#10231f;--panel:#19352d;--line:#35594a}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,"Noto Sans TC",sans-serif;line-height:1.65}
+    a{color:inherit}.wrap{width:min(1120px,calc(100% - 40px));margin:auto}.top{display:flex;justify-content:space-between;align-items:center;padding:24px 0}.brand{font-weight:900;letter-spacing:.08em}.brand span{color:var(--mint)}.top a{color:var(--muted);text-decoration:none;font-size:.92rem}
+    .hero{position:relative;min-height:610px;display:grid;grid-template-columns:1.05fr .95fr;align-items:center;gap:36px;padding:52px 0 78px}.eyebrow{color:var(--mint);font-size:.85rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase}.hero h1{font-size:clamp(3.2rem,8vw,6.6rem);line-height:.99;letter-spacing:-.07em;margin:18px 0 24px}.hero h1 em{font-style:normal;color:var(--sun)}.lead{color:var(--muted);font-size:1.13rem;max-width:520px}.button{display:inline-block;margin-top:22px;background:var(--mint);color:#173225;text-decoration:none;font-weight:900;padding:12px 20px;border-radius:999px}.scene{height:410px;position:relative;border:1px solid var(--line);border-radius:30px;overflow:hidden;background:linear-gradient(#70b8bb 0 55%,#347d70 55% 100%);box-shadow:0 24px 80px #07151188}.sun{position:absolute;width:68px;height:68px;border-radius:50%;background:#ffd77d;right:16%;top:12%}.island{position:absolute;left:12%;right:10%;bottom:20%;height:43%;background:#557f4d;clip-path:polygon(0 100%,10% 72%,25% 77%,41% 10%,53% 0,67% 50%,77% 43%,100% 100%)}.island:after{content:"";position:absolute;inset:38% 0 0;background:#73965c}.blocks{position:absolute;bottom:20%;left:27%;display:flex;gap:5px;align-items:flex-end}.block{width:42px;height:42px;background:#c9764d;border:3px solid #edaa70;box-shadow:inset -8px -8px #854c3c}.block:nth-child(2){height:72px;background:#dfab65;border-color:#f3d18a}.block:nth-child(3){background:#547a50;border-color:#9dc577}.boat{position:absolute;bottom:12%;right:17%;font-size:3.3rem;filter:drop-shadow(0 8px 0 #173f43)}.cloud{position:absolute;left:12%;top:18%;font-size:2.5rem;opacity:.8}.caption{position:absolute;bottom:20px;left:22px;color:#e9f4dd;font-size:.82rem;font-weight:700;letter-spacing:.08em}
+    section{padding:64px 0}.section-head{max-width:650px;margin-bottom:28px}.section-head h2{font-size:clamp(2rem,4vw,3.3rem);line-height:1.1;margin:10px 0}.section-head p,.card p{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.card{padding:24px;border:1px solid var(--line);border-radius:20px;background:var(--panel)}.icon{font-size:2rem}.card h3{margin:12px 0 4px}.islands{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}.pill{border:1px solid var(--line);border-radius:999px;padding:7px 13px;color:#d6e4d1;background:#19352d}.note{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start;padding:26px;border:1px solid #806341;border-radius:22px;background:#302b22}.note .icon{font-size:2.5rem}.note h3{margin:0;color:var(--sun)}.note p{margin:.35rem 0 0;color:#d5c7ac}.status{color:var(--mint);font-weight:800}.foot{border-top:1px solid var(--line);padding:26px 0 40px;color:var(--muted);font-size:.88rem;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    @media(max-width:760px){.hero{grid-template-columns:1fr;padding-top:28px}.scene{height:320px}.grid{grid-template-columns:1fr}.top{padding:18px 0}.hero h1{font-size:clamp(3rem,16vw,5rem)}section{padding:46px 0}}
+  </style>
+</head>
+<body>
+  <header class="wrap top"><div class="brand">島嶼<span>方塊</span></div><a href="#vision">探索遊戲構想 ↓</a></header>
+  <main>
+    <section class="wrap hero">
+      <div><div class="eyebrow">A voxel world inspired by Taiwan</div><h1>把整座<br><em>台灣</em>蓋進遊戲。</h1><p class="lead">一座縮小版的台灣方塊世界。從街角騎樓一路走到海邊，再搭船或飛機去探索離島；每一塊土地，都留給玩家自由建造。</p><a class="button" href="#vision">看看世界藍圖</a></div>
+      <div class="scene" aria-label="台灣島嶼、街屋與船的方塊風格插畫"><div class="sun"></div><div class="cloud">☁</div><div class="island"></div><div class="blocks"><i class="block"></i><i class="block"></i><i class="block"></i></div><div class="boat">⛵</div><div class="caption">從山城，到海岸，再到離島</div></div>
+    </section>
+    <section id="vision" class="wrap"><div class="section-head"><div class="eyebrow">The vision</div><h2>熟悉的方塊玩法，<br>長出自己的台灣樣子。</h2><p>用直覺的方式探索、挖掘、放置與建造。地圖縮小到適合遊玩的尺度，仍保留台灣本島與離島的探索感。</p></div>
+      <div class="grid">
+        <article class="card"><div class="icon">🧱</div><h3>自由建造</h3><p>用方塊打造自己的街區、房子與風景，操作以熟悉的沙盒遊戲為參考。</p></article>
+        <article class="card"><div class="icon">🛵</div><h3>台灣街景</h3><p>招牌、騎樓、機車、藍白拖、球棒、遊戲用手槍與海岸消波塊，讓世界有在地生活感。</p></article>
+        <article class="card"><div class="icon">🚢</div><h3>本島與離島</h3><p>搭船或搭飛機出發，從本島繼續探索更多島嶼與各自的地形特色。</p></article>
+      </div>
+      <div class="islands" aria-label="地圖規劃涵蓋地點"><span class="pill">台灣本島</span><span class="pill">澎湖</span><span class="pill">金門</span><span class="pill">馬祖</span><span class="pill">綠島</span><span class="pill">蘭嶼</span></div>
+    </section>
+    <section class="wrap"><div class="note"><div class="icon">🌊</div><div><h3>台中特產？消波塊裡封著人。</h3><p>一個台中限定的搞笑都市傳說彩蛋，等玩家到海岸親自發現。實際呈現方式還在規劃中。</p></div></div></section>
+    <section class="wrap"><div class="section-head"><div class="eyebrow">Project status</div><h2>現在正在畫下藍圖。</h2><p><span class="status">● 概念規劃中</span>　核心世界觀與特色已定，接下來將製作第一個可以走動、挖掘與放置方塊的原型。</p></div></section>
+  </main>
+  <footer class="wrap foot"><span>島嶼方塊 · 一起把台灣蓋出來</span><span>早期構想展示 · 遊戲尚未推出</span></footer>
+</body>
+</html>
