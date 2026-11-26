@@ -6,7 +6,12 @@ import { validateWorldSave, MAX_WORLD_SAVE_BYTES } from './world-save.js';
 import { islandAtPosition, isIslandPoint } from './island-geometry.js';
 import { BlockEditHistory } from './block-edit-history.js';
 import { generateDefaultWorldContent } from './world-generation.js';
-import { crosswalkBlockEntries, scooterBlockEntries, streetlampBlockEntries } from './street-props.js';
+import {
+  crosswalkBlockEntries,
+  scooterBlockEntries,
+  streetBenchBlockEntries,
+  streetlampBlockEntries,
+} from './street-props.js';
 import { greenIslandTrailEntries, orchidIslandTrailEntries } from './island-trails.js';
 import {
   kinmenWindLionEntries,
@@ -101,6 +106,7 @@ export class VoxelWorld {
     for(const [key,type] of crosswalkBlockEntries(-5,1,-3)) this.blocks.set(key,type);
     for(const [key,type] of streetlampBlockEntries(-2,1,-3)) this.blocks.set(key,type);
     for(const [key,type] of scooterBlockEntries(-3,1,-1)) this.blocks.set(key,type);
+    for(const [key,type] of streetBenchBlockEntries(-7,1,3)) this.blocks.set(key,type);
     // A small coast-side row of wave breakers makes the Taiwan shoreline legible.
     for(let z=-2;z<=2;z++){
       const x=-8;
