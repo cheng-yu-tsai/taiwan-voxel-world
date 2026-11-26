@@ -7,6 +7,7 @@ import { terrainHeight } from '../site/game/terrain.js';
 import {
   greenIslandCoastalRockEntries,
   kinmenWindLionEntries,
+  matsuCoastalOutcropEntries,
   matsuStoneTowerEntries,
   orchidIslandCoastalRockEntries,
   penghuBasaltColumnEntries,
@@ -94,6 +95,41 @@ test('generates a stone landmark tower on Matsu land with a sign at its top', ()
     }
   }
   assert.equal(entries.filter(([, type]) => type === 'sign').length, 1);
+});
+
+test('generates a deterministic natural rock outcrop on Matsu away from the spawn and stone tower', () => {
+  const matsu = ISLANDS.find(island => island.id === 'matsu');
+  const entries = matsuCoastalOutcropEntries();
+  const towerColumns = new Set(matsuStoneTowerEntries().map(([key]) => {
+    const [x, , z] = key.split(',');
+    return `${x},${z}`;
+  }));
+  assert.deepEqual(matsuCoastalOutcropEntries(), entries);
+  assert.equal(entries.length, 6);
+  assert.ok(entries.every(([, type]) => type === 'stone'));
+  assert.equal(new Set(entries.map(([key]) => key)).size, entries.length);
+
+  const columns = new Map();
+  for (const [key] of entries) {
+    const [x, y, z] = key.split(',').map(Number);
+    const columnKey = `${x},${z}`;
+    if (!columns.has(columnKey)) columns.set(columnKey, []);
+    columns.get(columnKey).push(y);
+    assert.ok(isIslandPoint(matsu, x + 0.5, z + 0.5, matsu.shape[0]));
+    assert.ok(Math.hypot((x + 0.5 - matsu.shape[0].x) / matsu.shape[0].rx,
+      (z + 0.5 - matsu.shape[0].z) / matsu.shape[0].rz) > 0.6, 'outcrop should stay near the island edge');
+    assert.ok(!towerColumns.has(columnKey));
+  }
+  assert.equal(columns.size, 3);
+  assert.equal(columns.has(`${Math.floor(matsu.spawn.x)},${Math.floor(matsu.spawn.z)}`), false);
+  for (const [columnKey, levels] of columns) {
+    const [x, z] = columnKey.split(',').map(Number);
+    const baseY = terrainHeight(matsu, x + 0.5, z + 0.5);
+    levels.sort((a, b) => a - b);
+    assert.equal(levels[0], baseY);
+    assert.deepEqual(levels, Array.from({ length: levels.length }, (_, index) => baseY + index));
+  }
+  assert.deepEqual([...columns.values()].map(levels => levels.length), [2, 3, 1]);
 });
 
 test('generates deterministic Green Island coastal rocks above land and clear of the trail', () => {

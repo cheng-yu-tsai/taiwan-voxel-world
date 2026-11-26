@@ -13,6 +13,7 @@ const windLionShape = [
   [1, 2, 0],
 ];
 const matsuColumnHeights = [3, 2];
+const matsuCoastalOutcropShape = [[8, -29, 2], [8, -30, 3], [8, -31, 1]];
 const coastalRockHeights = [2, 3];
 const taiwanLookout = { x: 0, z: 11, width: 3, depth: 3 };
 const islandTrailEntriesById = new Map([
@@ -141,6 +142,35 @@ export function matsuStoneTowerEntries() {
     for (let offset = 0; offset < height; offset++) entries.push([`${x},${baseY + offset},${z}`, 'stone']);
     if (dx === 0) entries.push([`${x},${baseY + height},${z}`, 'sign']);
   });
+
+  return entries;
+}
+
+export function matsuCoastalOutcropEntries() {
+  const island = ISLANDS.find(candidate => candidate.id === 'matsu');
+  if (!island || island.type !== 'cluster') throw new Error('Matsu island group is not configured');
+  const [mainLandform] = island.shape;
+  const spawnColumn = `${Math.floor(island.spawn.x)},${Math.floor(island.spawn.z)}`;
+  const towerColumns = new Set(matsuStoneTowerEntries().map(([key]) => {
+    const [x, , z] = key.split(',');
+    return `${x},${z}`;
+  }));
+  const entries = [];
+
+  for (const [x, z, height] of matsuCoastalOutcropShape) {
+    const column = `${x},${z}`;
+    if (!isIslandPoint(island, x + 0.5, z + 0.5, mainLandform)) {
+      throw new Error('Matsu coastal outcrop falls outside the main island');
+    }
+    if (column === spawnColumn || towerColumns.has(column)) {
+      throw new Error('Matsu coastal outcrop overlaps the spawn or stone tower');
+    }
+    const edgeDistance = Math.hypot((x + 0.5 - mainLandform.x) / mainLandform.rx,
+      (z + 0.5 - mainLandform.z) / mainLandform.rz);
+    if (edgeDistance <= 0.6) throw new Error('Matsu coastal outcrop should stay near the island edge');
+    const baseY = terrainHeight(island, x + 0.5, z + 0.5);
+    for (let offset = 0; offset < height; offset++) entries.push([`${x},${baseY + offset},${z}`, 'stone']);
+  }
 
   return entries;
 }

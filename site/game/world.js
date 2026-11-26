@@ -18,6 +18,7 @@ import { greenIslandTrailEntries, orchidIslandTrailEntries } from './island-trai
 import {
   greenIslandCoastalRockEntries,
   kinmenWindLionEntries,
+  matsuCoastalOutcropEntries,
   matsuStoneTowerEntries,
   orchidIslandCoastalRockEntries,
   penghuBasaltColumnEntries,
@@ -153,6 +154,10 @@ export class VoxelWorld {
 
   seedMatsuLandmark(){
     for(const [key,type] of matsuStoneTowerEntries()) this.blocks.set(key,type);
+  }
+
+  seedMatsuCoastalOutcrop(){
+    for(const [key,type] of matsuCoastalOutcropEntries()) this.blocks.set(key,type);
   }
 
   seedGreenIslandCoastalRocks(){
