@@ -11,6 +11,7 @@ test('generates every configured island before its local landmarks and street co
     'seedKinmenLandmark',
     'seedMatsuLandmark',
     'seedGreenIslandCoastalRocks',
+    'seedOrchidIslandCoastalRocks',
     'seedIslandTrails',
     'seedTaiwanStreet',
   ].map(method => [method, value => calls.push([method, value?.id ?? null])]));
@@ -23,6 +24,7 @@ test('generates every configured island before its local landmarks and street co
     ['seedKinmenLandmark', null],
     ['seedMatsuLandmark', null],
     ['seedGreenIslandCoastalRocks', null],
+    ['seedOrchidIslandCoastalRocks', null],
     ['seedIslandTrails', null],
     ['seedTaiwanStreet', null],
   ]);

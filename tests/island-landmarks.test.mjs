@@ -2,12 +2,13 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ISLANDS } from '../site/game/config.js';
 import { isIslandPoint } from '../site/game/island-geometry.js';
-import { greenIslandTrailEntries } from '../site/game/island-trails.js';
+import { greenIslandTrailEntries, orchidIslandTrailEntries } from '../site/game/island-trails.js';
 import { terrainHeight } from '../site/game/terrain.js';
 import {
   greenIslandCoastalRockEntries,
   kinmenWindLionEntries,
   matsuStoneTowerEntries,
+  orchidIslandCoastalRockEntries,
   penghuBasaltColumnEntries,
 } from '../site/game/island-landmarks.js';
 
@@ -120,6 +121,38 @@ test('generates deterministic Green Island coastal rocks above land and clear of
   for (const [columnKey, levels] of columns) {
     const [x, z] = columnKey.split(',').map(Number);
     const baseY = terrainHeight(green, x + 0.5, z + 0.5);
+    levels.sort((a, b) => a - b);
+    assert.equal(levels[0], baseY);
+    assert.deepEqual(levels, Array.from({ length: levels.length }, (_, index) => baseY + index));
+  }
+});
+
+test('generates deterministic Orchid Island coastal rocks above land and clear of the trail and spawn', () => {
+  const orchid = ISLANDS.find(island => island.id === 'orchid');
+  const entries = orchidIslandCoastalRockEntries();
+  const trail = new Set(orchidIslandTrailEntries().map(([key]) => {
+    const [x, , z] = key.split(',');
+    return `${x},${z}`;
+  }));
+  assert.deepEqual(orchidIslandCoastalRockEntries(), entries);
+  assert.equal(entries.length, 5);
+  assert.ok(entries.every(([, type]) => type === 'stone'));
+  assert.equal(new Set(entries.map(([key]) => key)).size, entries.length);
+
+  const columns = new Map();
+  for (const [key] of entries) {
+    const [x, y, z] = key.split(',').map(Number);
+    const columnKey = `${x},${z}`;
+    if (!columns.has(columnKey)) columns.set(columnKey, []);
+    columns.get(columnKey).push(y);
+    assert.ok(isIslandPoint(orchid, x + 0.5, z + 0.5));
+    assert.ok(!trail.has(columnKey));
+  }
+  assert.equal(columns.size, 2);
+  assert.equal(columns.has(`${Math.floor(orchid.spawn.x)},${Math.floor(orchid.spawn.z)}`), false);
+  for (const [columnKey, levels] of columns) {
+    const [x, z] = columnKey.split(',').map(Number);
+    const baseY = terrainHeight(orchid, x + 0.5, z + 0.5);
     levels.sort((a, b) => a - b);
     assert.equal(levels[0], baseY);
     assert.deepEqual(levels, Array.from({ length: levels.length }, (_, index) => baseY + index));

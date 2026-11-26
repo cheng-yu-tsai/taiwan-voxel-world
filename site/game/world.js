@@ -17,6 +17,7 @@ import {
   greenIslandCoastalRockEntries,
   kinmenWindLionEntries,
   matsuStoneTowerEntries,
+  orchidIslandCoastalRockEntries,
   penghuBasaltColumnEntries,
 } from './island-landmarks.js';
 
@@ -145,6 +146,10 @@ export class VoxelWorld {
 
   seedGreenIslandCoastalRocks(){
     for(const [key,type] of greenIslandCoastalRockEntries()) this.blocks.set(key,type);
+  }
+
+  seedOrchidIslandCoastalRocks(){
+    for(const [key,type] of orchidIslandCoastalRockEntries()) this.blocks.set(key,type);
   }
 
   buildShop(x0,z0,width,depth,wall,roof,sign){

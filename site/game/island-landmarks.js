@@ -1,5 +1,6 @@
 import { ISLANDS } from './config.js';
 import { isIslandPoint } from './island-geometry.js';
+import { greenIslandTrailEntries, orchidIslandTrailEntries } from './island-trails.js';
 import { terrainHeight } from './terrain.js';
 
 const columnHeights = [3, 4, 3, 2, 3, 2];
@@ -12,7 +13,40 @@ const windLionShape = [
   [1, 2, 0],
 ];
 const matsuColumnHeights = [3, 2];
-const greenIslandRockHeights = [2, 3];
+const coastalRockHeights = [2, 3];
+const islandTrailEntriesById = new Map([
+  ['green', greenIslandTrailEntries],
+  ['orchid', orchidIslandTrailEntries],
+]);
+
+function ellipseCoastalRockEntries(islandId) {
+  const island = ISLANDS.find(candidate => candidate.id === islandId);
+  if (!island || island.type !== 'ellipse') throw new Error(`${islandId} island ellipse is not configured`);
+  const trailEntries = islandTrailEntriesById.get(islandId);
+  if (!trailEntries) throw new Error(`${islandId} island trail is not configured`);
+
+  const landform = island.shape;
+  const originX = Math.floor(landform.x) - 1;
+  const originZ = Math.floor(landform.z - landform.rz);
+  const spawnColumn = `${Math.floor(island.spawn.x)},${Math.floor(island.spawn.z)}`;
+  const trailColumns = new Set(trailEntries().map(([key]) => {
+    const [x, , z] = key.split(',');
+    return `${x},${z}`;
+  }));
+  const entries = [];
+
+  coastalRockHeights.forEach((height, dx) => {
+    const x = originX + dx, z = originZ;
+    const column = `${x},${z}`;
+    if (!isIslandPoint(island, x + 0.5, z + 0.5)) throw new Error(`${island.name} coastal rock falls outside its island`);
+    if (column === spawnColumn) throw new Error(`${island.name} coastal rock occupies its spawn column`);
+    if (trailColumns.has(column)) throw new Error(`${island.name} coastal rock overlaps its trail`);
+    const baseY = terrainHeight(island, x + 0.5, z + 0.5);
+    for (let offset = 0; offset < height; offset++) entries.push([`${x},${baseY + offset},${z}`, 'stone']);
+  });
+
+  return entries;
+}
 
 export function penghuBasaltColumnEntries() {
   const island = ISLANDS.find(candidate => candidate.id === 'penghu');
@@ -69,19 +103,9 @@ export function matsuStoneTowerEntries() {
 }
 
 export function greenIslandCoastalRockEntries() {
-  const island = ISLANDS.find(candidate => candidate.id === 'green');
-  if (!island || island.type !== 'ellipse') throw new Error('Green Island ellipse is not configured');
-  const landform = island.shape;
-  const originX = Math.floor(landform.x) - 1;
-  const originZ = Math.floor(landform.z - landform.rz);
-  const entries = [];
+  return ellipseCoastalRockEntries('green');
+}
 
-  greenIslandRockHeights.forEach((height, dx) => {
-    const x = originX + dx, z = originZ;
-    if (!isIslandPoint(island, x + 0.5, z + 0.5)) throw new Error('Green Island coastal rock falls outside its island');
-    const baseY = terrainHeight(island, x + 0.5, z + 0.5);
-    for (let offset = 0; offset < height; offset++) entries.push([`${x},${baseY + offset},${z}`, 'stone']);
-  });
-
-  return entries;
+export function orchidIslandCoastalRockEntries() {
+  return ellipseCoastalRockEntries('orchid');
 }
