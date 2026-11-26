@@ -7,7 +7,11 @@ import { islandAtPosition, isIslandPoint } from './island-geometry.js';
 import { BlockEditHistory } from './block-edit-history.js';
 import { crosswalkBlockEntries, scooterBlockEntries, streetlampBlockEntries } from './street-props.js';
 import { greenIslandTrailEntries } from './island-trails.js';
-import { kinmenWindLionEntries, penghuBasaltColumnEntries } from './island-landmarks.js';
+import {
+  kinmenWindLionEntries,
+  matsuStoneTowerEntries,
+  penghuBasaltColumnEntries,
+} from './island-landmarks.js';
 
 const faces = [
   { n: [1,0,0], corners: [[1,0,0],[1,1,0],[1,1,1],[1,0,1]] },
@@ -47,6 +51,7 @@ export class VoxelWorld {
     for(const island of ISLANDS) this.generateIsland(island);
     this.seedPenghuLandmark();
     this.seedKinmenLandmark();
+    this.seedMatsuLandmark();
     this.seedGreenIslandTrail();
     this.seedTaiwanStreet();
     this.restoreSave();
@@ -123,6 +128,10 @@ export class VoxelWorld {
 
   seedKinmenLandmark(){
     for(const [key,type] of kinmenWindLionEntries()) this.blocks.set(key,type);
+  }
+
+  seedMatsuLandmark(){
+    for(const [key,type] of matsuStoneTowerEntries()) this.blocks.set(key,type);
   }
 
   buildShop(x0,z0,width,depth,wall,roof,sign){

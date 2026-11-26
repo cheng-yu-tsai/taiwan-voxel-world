@@ -11,6 +11,7 @@ const windLionShape = [
   [1, 4, 1], [0, 4, 1], [2, 4, 1],
   [1, 2, 0],
 ];
+const matsuColumnHeights = [3, 2];
 
 export function penghuBasaltColumnEntries() {
   const island = ISLANDS.find(candidate => candidate.id === 'penghu');
@@ -45,4 +46,23 @@ export function kinmenWindLionEntries() {
     const y = terrainHeight(island, x + 0.5, z + 0.5) + dy;
     return [`${x},${y},${z}`, 'stone'];
   });
+}
+
+export function matsuStoneTowerEntries() {
+  const island = ISLANDS.find(candidate => candidate.id === 'matsu');
+  if (!island || island.type !== 'cluster') throw new Error('Matsu island group is not configured');
+  const landform = island.shape[0];
+  const originX = Math.floor(landform.x);
+  const originZ = Math.floor(landform.z) + 1;
+  const entries = [];
+
+  matsuColumnHeights.forEach((height, dx) => {
+    const x = originX + dx, z = originZ;
+    if (!isIslandPoint(island, x + 0.5, z + 0.5, landform)) throw new Error('Matsu tower falls outside its landform');
+    const baseY = terrainHeight(island, x + 0.5, z + 0.5);
+    for (let offset = 0; offset < height; offset++) entries.push([`${x},${baseY + offset},${z}`, 'stone']);
+    if (dx === 0) entries.push([`${x},${baseY + height},${z}`, 'sign']);
+  });
+
+  return entries;
 }

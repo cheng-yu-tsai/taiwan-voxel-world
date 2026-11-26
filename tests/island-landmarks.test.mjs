@@ -3,7 +3,11 @@ import test from 'node:test';
 import { ISLANDS } from '../site/game/config.js';
 import { isIslandPoint } from '../site/game/island-geometry.js';
 import { terrainHeight } from '../site/game/terrain.js';
-import { kinmenWindLionEntries, penghuBasaltColumnEntries } from '../site/game/island-landmarks.js';
+import {
+  kinmenWindLionEntries,
+  matsuStoneTowerEntries,
+  penghuBasaltColumnEntries,
+} from '../site/game/island-landmarks.js';
 
 const penghu = ISLANDS.find(island => island.id === 'penghu');
 
@@ -57,4 +61,33 @@ test('generates a stylized Kinmen stone guardian on land away from the spawn', (
     const [x, z] = columnKey.split(',').map(Number);
     assert.ok(levels.includes(terrainHeight(kinmen, x + 0.5, z + 0.5)));
   }
+});
+
+test('generates a stone landmark tower on Matsu land with a sign at its top', () => {
+  const matsu = ISLANDS.find(island => island.id === 'matsu');
+  const entries = matsuStoneTowerEntries();
+  assert.deepEqual(matsuStoneTowerEntries(), entries);
+  assert.equal(entries.length, 6);
+  assert.equal(new Set(entries.map(([key]) => key)).size, entries.length);
+
+  const columns = new Map();
+  for (const [key, type] of entries) {
+    const [x, y, z] = key.split(',').map(Number);
+    const columnKey = `${x},${z}`;
+    if (!columns.has(columnKey)) columns.set(columnKey, []);
+    columns.get(columnKey).push({ y, type });
+    assert.ok(isIslandPoint(matsu, x + 0.5, z + 0.5, matsu.shape[0]));
+  }
+  assert.equal(columns.has(`${Math.floor(matsu.spawn.x)},${Math.floor(matsu.spawn.z)}`), false);
+  for (const [columnKey, blocks] of columns) {
+    const [x, z] = columnKey.split(',').map(Number);
+    const baseY = terrainHeight(matsu, x + 0.5, z + 0.5);
+    const levels = blocks.sort((a, b) => a.y - b.y);
+    assert.equal(levels[0].y, baseY);
+    assert.ok(levels.slice(0, -1).every(block => block.type === 'stone'));
+    if (levels.length > 1 && levels.at(-1).type === 'sign') {
+      assert.equal(levels.at(-1).y, baseY + levels.length - 1);
+    }
+  }
+  assert.equal(entries.filter(([, type]) => type === 'sign').length, 1);
 });
