@@ -9,7 +9,7 @@ export function penghuBasaltColumnEntries() {
   if (!island || island.type !== 'cluster') throw new Error('Penghu island group is not configured');
   const landform = island.shape[0];
   const originX = Math.floor(landform.x) - 1;
-  const originZ = Math.floor(landform.z) - 1;
+  const originZ = Math.floor(landform.z) + 1;
   const entries = [];
 
   columnHeights.forEach((height, index) => {

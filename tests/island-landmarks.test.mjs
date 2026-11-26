@@ -23,6 +23,8 @@ test('generates six deterministic stone columns on Penghu land above its terrain
     assert.ok(isIslandPoint(penghu, x + 0.5, z + 0.5, penghu.shape[0]));
   }
   assert.equal(columns.size, 6);
+  assert.equal(columns.has(`${Math.floor(penghu.spawn.x)},${Math.floor(penghu.spawn.z)}`), false,
+    'the landmark should leave the destination spawn column clear');
 
   for (const [columnKey, levels] of columns) {
     const [x, z] = columnKey.split(',').map(Number);
