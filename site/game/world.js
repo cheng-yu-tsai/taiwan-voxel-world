@@ -5,6 +5,7 @@ import { ChunkBlockIndex } from './chunk-index.js';
 import { validateWorldSave, MAX_WORLD_SAVE_BYTES } from './world-save.js';
 import { islandAtPosition, isIslandPoint } from './island-geometry.js';
 import { BlockEditHistory } from './block-edit-history.js';
+import { generateDefaultWorldContent } from './world-generation.js';
 import { crosswalkBlockEntries, scooterBlockEntries, streetlampBlockEntries } from './street-props.js';
 import { greenIslandTrailEntries, orchidIslandTrailEntries } from './island-trails.js';
 import {
@@ -48,12 +49,7 @@ export class VoxelWorld {
   async generate(){
     this.blocks.clear();
     this.editHistory.clear();
-    for(const island of ISLANDS) this.generateIsland(island);
-    this.seedPenghuLandmark();
-    this.seedKinmenLandmark();
-    this.seedMatsuLandmark();
-    this.seedIslandTrails();
-    this.seedTaiwanStreet();
+    generateDefaultWorldContent(this);
     this.restoreSave();
     this.reindexColumns();
     this.rebuildAll();

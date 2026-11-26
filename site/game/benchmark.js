@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import { ISLANDS, WORLD_CONFIG } from './config.js';
+import { WORLD_CONFIG } from './config.js';
 import { VoxelWorld } from './world.js';
+import { generateDefaultWorldContent } from './world-generation.js';
 import { syntheticBlockEntries } from './benchmark-data.js';
 import { summarizeFrameIntervals, summarizeLongAnimationFrames } from './frame-timing.js';
 
@@ -185,8 +186,7 @@ async function runBenchmark() {
       setStatus(trial === 0 ? '暖機：產生初始島嶼與街角…' : `量測初始世界生成（${trial}/3）…`);
       await nextFrame();
       const generationStart = performance.now();
-      for (const island of ISLANDS) world.generateIsland(island);
-      world.seedTaiwanStreet();
+      generateDefaultWorldContent(world);
       world.reindexColumns();
       world.rebuildAll();
       const elapsed = performance.now() - generationStart;
