@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { BLOCKS, CONFIG_VERSION, ISLANDS, WORLD_CONFIG } from './config.js';
 import { terrainHeight } from './terrain.js';
-import { ChunkBlockIndex, isValidBlockKey } from './chunk-index.js';
+import { ChunkBlockIndex } from './chunk-index.js';
 import { validateWorldSave, MAX_WORLD_SAVE_BYTES } from './world-save.js';
 import { islandAtPosition, isIslandPoint } from './island-geometry.js';
 import { BlockEditHistory } from './block-edit-history.js';
@@ -119,9 +119,8 @@ export class VoxelWorld {
     try{
       const raw=localStorage.getItem(WORLD_CONFIG.saveKey);
       if(!raw) return;
-      const save=JSON.parse(raw);
-      if(save.version!==CONFIG_VERSION||!Array.isArray(save.blocks)) return;
-      this.blocks=new Map(save.blocks.filter(entry=>Array.isArray(entry)&&entry.length===2&&isValidBlockKey(entry[0])&&typeof entry[1]==='string'));
+      const save=validateWorldSave(JSON.parse(raw));
+      this.blocks=new Map(save.blocks);
     }catch(error){
       console.warn('Could not restore saved voxel world:',error);
       this.notifyChange({message:'讀取存檔失敗，已建立新世界'});
