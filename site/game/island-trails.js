@@ -5,16 +5,16 @@ import { isIslandPoint } from './island-geometry.js';
 const TRAIL_RADIUS = 0.76;
 const TRACE_STEPS = 128;
 
-function appendConnected(route, point, used, closesLoop = false) {
+function appendConnected(route, point, used, islandName, closesLoop = false) {
   const previous = route.at(-1);
   const distance = Math.abs(point.x - previous.x) + Math.abs(point.z - previous.z);
   if (distance === 0) return;
   if (distance !== 1) {
-    throw new Error('Green Island trail sampling skipped a land block');
+    throw new Error(`${islandName} trail sampling skipped a land block`);
   }
   if (closesLoop) return;
   const key = `${point.x},${point.z}`;
-  if (used.has(key)) throw new Error('Green Island trail crossed itself');
+  if (used.has(key)) throw new Error(`${islandName} trail crossed itself`);
   route.push(point);
   used.add(key);
 }
@@ -32,9 +32,10 @@ function gradeHeights(surfaceHeights) {
   });
 }
 
-export function greenIslandTrailEntries() {
-  const island = ISLANDS.find(candidate => candidate.id === 'green');
-  if (!island || island.type !== 'ellipse') throw new Error('Green Island ellipse is not configured');
+function islandTrailEntries(islandId) {
+  const island = ISLANDS.find(candidate => candidate.id === islandId);
+  if (!island || island.type !== 'ellipse') throw new Error(`Island ellipse is not configured: ${islandId}`);
+  const islandName = island.name;
   const shape = island.shape;
   const route = [];
   const used = new Set();
@@ -48,14 +49,22 @@ export function greenIslandTrailEntries() {
       route.push({ x, z });
       used.add(`${x},${z}`);
     } else {
-      appendConnected(route, { x, z }, used);
+      appendConnected(route, { x, z }, used, islandName);
     }
   }
 
-  if (route.length < 4) throw new Error('Green Island trail is too small to form a loop');
-  appendConnected(route, route[0], used, true);
+  if (route.length < 4) throw new Error(`${islandName} trail is too small to form a loop`);
+  appendConnected(route, route[0], used, islandName, true);
 
   const surfaceHeights = route.map(({ x, z }) => terrainHeight(island, x + 0.5, z + 0.5) - 1);
   const trailHeights = gradeHeights(surfaceHeights);
   return route.map(({ x, z }, index) => [`${x},${trailHeights[index]},${z}`, 'road']);
+}
+
+export function greenIslandTrailEntries() {
+  return islandTrailEntries('green');
+}
+
+export function orchidIslandTrailEntries() {
+  return islandTrailEntries('orchid');
 }

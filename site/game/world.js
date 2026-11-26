@@ -6,7 +6,7 @@ import { validateWorldSave, MAX_WORLD_SAVE_BYTES } from './world-save.js';
 import { islandAtPosition, isIslandPoint } from './island-geometry.js';
 import { BlockEditHistory } from './block-edit-history.js';
 import { crosswalkBlockEntries, scooterBlockEntries, streetlampBlockEntries } from './street-props.js';
-import { greenIslandTrailEntries } from './island-trails.js';
+import { greenIslandTrailEntries, orchidIslandTrailEntries } from './island-trails.js';
 import {
   kinmenWindLionEntries,
   matsuStoneTowerEntries,
@@ -52,7 +52,7 @@ export class VoxelWorld {
     this.seedPenghuLandmark();
     this.seedKinmenLandmark();
     this.seedMatsuLandmark();
-    this.seedGreenIslandTrail();
+    this.seedIslandTrails();
     this.seedTaiwanStreet();
     this.restoreSave();
     this.reindexColumns();
@@ -112,13 +112,19 @@ export class VoxelWorld {
     }
   }
 
-  seedGreenIslandTrail(){
-    const island=this.islandById.get('green');
-    for(const [key,type] of greenIslandTrailEntries()){
-      const [x,y,z]=parseKey(key);
-      const surfaceY=terrainHeight(island,x+.5,z+.5)-1;
-      for(let above=y+1;above<=surfaceY;above++) this.blocks.delete(keyOf(x,above,z));
-      this.blocks.set(key,type);
+  seedIslandTrails(){
+    const trails=[
+      ['green',greenIslandTrailEntries()],
+      ['orchid',orchidIslandTrailEntries()],
+    ];
+    for(const [islandId,entries] of trails){
+      const island=this.islandById.get(islandId);
+      for(const [key,type] of entries){
+        const [x,y,z]=parseKey(key);
+        const surfaceY=terrainHeight(island,x+.5,z+.5)-1;
+        for(let above=y+1;above<=surfaceY;above++) this.blocks.delete(keyOf(x,above,z));
+        this.blocks.set(key,type);
+      }
     }
   }
 
