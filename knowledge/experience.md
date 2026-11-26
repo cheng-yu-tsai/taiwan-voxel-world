@@ -33,6 +33,14 @@
 - **注意事項：** 存檔道具數量上限是資料驗證的保護值，不是玩家背包容量或遊戲內物品上限。若加入資源成本、堆疊、製作、拾取或其他可攜物品分類，需重新評估選取和容量規則。
 - **驗證：** 已同步更新玩法循環、決策紀錄與路線圖，確保目前已實作範圍和未來觸發條件一致；屬規格決定，不涉及程式行為變更。
 
+## 2026-11-26｜保護既有 Chrome 分頁進行效能驗證
+
+- **做法：** 量測伺服器雖可在本機回傳 benchmark 頁面，仍先檢查桌面視窗；未見專案遊戲或量測頁，Chrome 啟動器只重用既有使用者視窗，於是停止導覽和效能追蹤。
+- **原因：** 確認頁面是否屬於此任務是開始 DevTools 操作的前提；通用瀏覽器啟動不保證建立隔離視窗，也不能證明 OS 層級前景狀態。
+- **可重用範圍：** 需要在桌面瀏覽器量效能、查除錯資料或操作網站的任務；先找出可驗證的專用分頁，若啟動器重用使用者分頁，改用隔離工作階段或等使用者開啟指定頁面後再操作。
+- **注意事項：** 本機 HTTP 200 和 `document.visibilityState === 'visible'` 都不能證明瀏覽器視窗位於 OS 前景。沒有專用頁面時不導航既有使用者分頁，也不宣稱已取得前景 trace。
+- **驗證：** `http://127.0.0.1:8765/benchmark.html` 回傳 200；沒有對頁面執行導航、互動或資料寫入，前景 trace 仍待能使用專用 Chrome 視窗後完成。
+
 ## 2026-11-26｜在 Pages 發布前執行完整 Node 測試
 
 - **做法：** 在 GitHub Actions Pages 工作流程加入 Node.js 24 檢查工作，先對 `site/game/*.js` 逐檔執行 `node --check`，再跑 `node --experimental-test-coverage --test-coverage-lines=80 --test-coverage-branches=80 --test-coverage-functions=80 --test tests/*.test.mjs`；部署工作依賴檢查工作成功。目標為 `main` 的 PR 也會跑檢查但跳過發布，PR 和 Pages 各用獨立 concurrency group。workflow 預設僅有 repository 讀取權，Pages 寫入和 OIDC 權限只授予部署工作。

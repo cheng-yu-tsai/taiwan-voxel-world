@@ -49,3 +49,5 @@
 - **桌面低 FPS 已在 Chrome 頁面可見狀態重現，作業系統前景待確認：** 2026-11-26 在 Chrome 158、Windows x64、1536×730、DPR 1.25、8 GB 記憶體回報值及 WebGL 可用的桌面 Chrome 分頁連跑兩次；兩次初始／結束 `document.visibilityState` 都是 visible，卻皆為 1.0 FPS、3 個影格，rAF P95 1,015.7／1,016.2 ms。`render()` CPU P95 為 107.4／38.1 ms；Long Animation Frames 各 1 次、最長 853.9／892.2 ms，無可歸因腳本。測試世界各 5,464 格；完整耗時列於[技術路線效能記錄](tech-roadmap.md)。
 - **解讀與限制：** 這確認低影格率在一般 Chrome 158 分頁且頁面 visibility 為 visible 時仍可重現，但 `visible` 不等於已證明 Chrome 視窗在作業系統前景。Windows Chrome 視窗控制無法確認目前 URL；嘗試透過分頁 CDP 啟動效能追蹤時呼叫逾時並使 debugger 脫離，沒有取得 trace 或 GPU 歸因。後續一次桌面 Chrome 控制嘗試又被 Computer Use 安全檢查中止，因工具無法驗證當前分頁 URL，未對 Chrome 執行操作。先前應用程式內分頁和 Chrome 連線分頁也有相近現象，但均未證明根因。
 - **推薦與進度：** 下一步在可明確確認作業系統前景的 Chrome 視窗以 DevTools Performance 擷取短 trace，檢查長影格、GPU 提交及瀏覽器排程；若頁面被降頻或沒有來源歸因，再保留報告並請使用者從可見 Chrome 視窗手動開始錄製。未取得可歸因證據前，不調整區塊大小、視距或據此宣稱裝置效能；中階手機仍須用實機另測。
+- **2026-11-26 再查：** 本次桌面視窗清單未出現遊戲或量測頁；Chrome 只有使用者原有的其他頁面。Chrome 啟動器重用既有瀏覽器，沒有建立可辨認的獨立量測視窗，因此未對現有頁面導覽或開始追蹤。本機 `http://127.0.0.1:8765/benchmark.html` 回傳 200，標題為「島嶼方塊｜效能量測」，但伺服器可達不代表瀏覽器前景狀態已驗證。
+- **目前建議：** 待可使用獨立 Chrome 視窗，或由使用者將此本機量測頁開在可見前景後，再擷取 trace；不可用一般分頁的 `visibility=visible` 取代 OS 前景證據。
