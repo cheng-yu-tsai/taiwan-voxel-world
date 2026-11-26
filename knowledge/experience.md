@@ -41,6 +41,14 @@
 - **注意事項：** 本機 HTTP 200 和 `document.visibilityState === 'visible'` 都不能證明瀏覽器視窗位於 OS 前景。沒有專用頁面時不導航既有使用者分頁，也不宣稱已取得前景 trace。
 - **驗證：** `http://127.0.0.1:8765/benchmark.html` 回傳 200；沒有對頁面執行導航、互動或資料寫入，前景 trace 仍待能使用專用 Chrome 視窗後完成。
 
+## 2026-11-26｜用裝飾小景呈現台中消波塊彩蛋
+
+- **做法：** 把彩蛋作成一件可由裝飾選單選取的單格靜態模型，由三個水泥色低多邊形消波塊和一尊戴暖色帽、穿青綠衣的無臉小人擺飾合併幾何組成；共用既有放置、四向旋轉、移除、復原／重做與版本 2 存檔。
+- **原因：** 讓已決定的台中特產梗能出現在自由建造世界，又不需要真的抓住 NPC 或玩家、不加入角色碰撞或傷害邏輯。
+- **可重用範圍：** 以單格錨點管理組合式展示物的格狀遊戲；把一組景物合併成單一裝飾登錄項，可沿用選取和持久化而不增加方塊 ID 或多物件放置交易。
+- **注意事項：** 中央小人是靜態擺飾，不是遊戲角色，也不與玩家互動；組合模型需留在錨點周圍一格範圍，避免旋轉或鄰近放置時明顯重疊。尚未在瀏覽器目視檢查模型比例與顏色。
+- **驗證：** 全套 74 項 Node 測試通過，行／分支／函式覆蓋率為 99.23%／91.34%／100%；所有 `site/game/*.js` 通過 `node --check`，`git diff --check` 通過。尚未在瀏覽器目視確認組合模型與四向旋轉外觀。
+
 ## 2026-11-26｜在 Pages 發布前執行完整 Node 測試
 
 - **做法：** 在 GitHub Actions Pages 工作流程加入 Node.js 24 檢查工作，先對 `site/game/*.js` 逐檔執行 `node --check`，再跑 `node --experimental-test-coverage --test-coverage-lines=80 --test-coverage-branches=80 --test-coverage-functions=80 --test tests/*.test.mjs`；部署工作依賴檢查工作成功。目標為 `main` 的 PR 也會跑檢查但跳過發布，PR 和 Pages 各用獨立 concurrency group。workflow 預設僅有 repository 讀取權，Pages 寫入和 OIDC 權限只授予部署工作。

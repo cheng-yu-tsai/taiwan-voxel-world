@@ -3,6 +3,7 @@ export const DECORATIONS = [
   { id: 'flip-flops', name: '藍白拖', swatch: '#5b9cba' },
   { id: 'baseball-bat', name: '球棒', swatch: '#bb8250' },
   { id: 'toy-pistol', name: '玩具手槍', swatch: '#41b9cc' },
+  { id: 'breakwater-diorama', name: '消波塊彩蛋', swatch: '#8c9690' },
 ];
 
 const knownDecorations = new Set(DECORATIONS.map(item => item.id));
