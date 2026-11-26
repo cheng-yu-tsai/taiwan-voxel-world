@@ -10,6 +10,7 @@
 - [待決策事項與建議](knowledge/decision.md)
 - [原型內容目錄](knowledge/content-catalog.md)
 - [首發階段玩法循環](knowledge/gameplay-loop.md)
+- [原型地圖與交通範圍](knowledge/map-scope.md)
 - [遊戲入口](site/index.html)
 
 ## 目前原型
