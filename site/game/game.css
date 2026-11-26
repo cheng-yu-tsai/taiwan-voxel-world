@@ -50,3 +50,6 @@
 .confirm-actions .secondary-button{min-height:44px}
 .confirm-actions .danger-confirm{background:#a85142;color:#fff1e8}
 .confirm-actions .danger-confirm:hover{background:#bd6150}
+/* The decoration-mode button is a native toggle and exposes its state visually as well as through aria-pressed. */
+#decoration-mode[aria-pressed="true"]{border-color:#f3ca78;background:#e6b65b35;box-shadow:0 0 0 2px #f1be6635}
+@media(max-width:560px){.top-actions{gap:6px}.icon-button{min-width:34px;padding:0 7px}}

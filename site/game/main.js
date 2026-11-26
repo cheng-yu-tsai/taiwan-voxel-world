@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { BLOCKS, CONTROL_DEFAULTS, ISLANDS, WORLD_CONFIG } from './config.js';
+import { DECORATIONS } from './world-objects.js';
 import { VoxelWorld } from './world.js';
 import { FirstPersonPlayer } from './player.js';
 import { GameUI } from './ui.js';
@@ -40,7 +41,7 @@ function makeCloud(x,y,z,scale){
 }
 const clouds=[makeCloud(-22,20,-17,2.8),makeCloud(12,23,4,2.2),makeCloud(32,17,-8,2.5),makeCloud(-6,18,24,1.8)];
 
-let world,player,quality='high',lastLocation='',selectedBlock=BLOCKS[0];
+let world,player,quality='high',lastLocation='',selectedBlock=BLOCKS[0],decorationMode=false,decorationRotation=0;
 function editHistory(redo){
   const changed=redo?world?.redo():world?.undo();
   if(changed)ui.showToast(redo?'已重做上一步':'已復原上一步');
@@ -49,6 +50,11 @@ const ui=new GameUI({
   start:()=>player?.requestLock(),
   releasePointer:()=>player?.releaseLock(),
   selectBlock:block=>{selectedBlock=block;},
+  setDecorationMode:enabled=>{decorationMode=enabled;},
+  rotateDecoration:()=>{
+    decorationRotation=(decorationRotation+1)%4;
+    ui.showToast(`藍白拖旋轉至 ${decorationRotation*90}°`);
+  },
   travel:(island,transport)=>{
     if(!player)return;
     player.releaseLock();player.teleport(island);lastLocation=island.shortName;
@@ -73,6 +79,7 @@ const ui=new GameUI({
   touchAction:action=>{
     if(action==='mine')interact(0);
     if(action==='place')interact(2);
+    if(action==='rotate-decoration')ui.rotateDecoration();
     if(action==='undo')editHistory(false);
     if(action==='redo')editHistory(true);
   },
@@ -110,15 +117,41 @@ const screenCenter=new THREE.Vector2(0,0);
 function interact(button){
   if(!player||ui.isModalOpen())return;
   raycaster.setFromCamera(screenCenter,camera);
+  if(decorationMode){
+    if(button===0){
+      const target=world.raycastDecoration(raycaster);
+      const removed=target&&world.removeDecoration(target.key);
+      if(removed)ui.showToast('移除藍白拖');
+      return;
+    }
+    if(button===2){
+      const hit=world.raycast(raycaster);
+      if(!hit)return;
+      if(hit.normal.y<.7){ui.showToast('藍白拖只能放在方塊上表面');return;}
+      const [x,y,z]=hit.key.split(',').map(Number);
+      const objectY=y+1;
+      const overlapsPlayer=x===Math.floor(player.position.x)&&z===Math.floor(player.position.z)
+        &&objectY>=Math.floor(player.position.y)&&objectY<=Math.floor(player.position.y+1.8);
+      if(overlapsPlayer){ui.showToast('請把藍白拖放在玩家腳邊以外');return;}
+      if(world.placeDecoration(x,objectY,z,DECORATIONS[0].id,decorationRotation))ui.showToast('放置藍白拖');
+      else ui.showToast('此處不能放置藍白拖');
+      return;
+    }
+  }
   const hit=world.raycast(raycaster);
   if(!hit)return;
   if(button===0){
+    if(world.hasDecorationAboveBlock(hit.key)){
+      ui.showToast('請先切換道具模式移除上方的藍白拖');
+      return;
+    }
     const removed=world.removeBlock(hit.key);
     if(removed)ui.showToast(`挖到${BLOCKS.find(block=>block.id===removed.type)?.name||'方塊'}`);
   }else if(button===2){
     const [x,y,z]=hit.key.split(',').map(Number),n=hit.normal;
     const bx=x+Math.round(n.x),by=y+Math.round(n.y),bz=z+Math.round(n.z);
     const overlapsPlayer=bx===Math.floor(player.position.x)&&bz===Math.floor(player.position.z)&&by>=Math.floor(player.position.y)&&by<=Math.floor(player.position.y+1.8);
+    if(world.hasDecorationAt(bx,by,bz)){ui.showToast('請先切換道具模式移除該處的藍白拖');return;}
     if(!overlapsPlayer&&world.setBlock(bx,by,bz,selectedBlock.id))ui.showToast(`放置${selectedBlock.name}`);
   }
 }
@@ -137,8 +170,10 @@ function animate(timestamp){
   const dt=timer.getDelta();
   player?.update(dt);
   if(player){
-    const target=world.raycast((()=>{raycaster.setFromCamera(screenCenter,camera);return raycaster;})());
-    ui.setTarget(target);
+    raycaster.setFromCamera(screenCenter,camera);
+    const target=world.raycast(raycaster);
+    const decoration=decorationMode?world.raycastDecoration(raycaster):null;
+    ui.setTarget(target,decorationMode,decoration,decorationRotation);
     hudClock+=dt;
     if(hudClock>.22){ui.updatePlayer(player.position,player.currentIsland);hudClock=0;}
   }

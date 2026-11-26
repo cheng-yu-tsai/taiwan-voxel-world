@@ -68,6 +68,12 @@ export class FirstPersonPlayer {
     if(event.code==='KeyH'){
       this.ui.openModal('help-modal');return;
     }
+    if(event.code==='KeyV'){
+      event.preventDefault();this.ui.toggleDecorationMode();return;
+    }
+    if(event.code==='KeyR'&&this.ui.decorationMode){
+      event.preventDefault();this.ui.rotateDecoration();return;
+    }
     const block=blockForHotkey(event.key,BLOCKS);
     if(block){this.ui.selectBlock(block.id);return;}
     if(['KeyW','KeyA','KeyS','KeyD','Space','ShiftLeft','ShiftRight'].includes(event.code)){

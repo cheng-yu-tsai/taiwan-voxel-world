@@ -10,6 +10,7 @@ export class GameUI {
     this.toastTimer=0;
     this.activeTransport='boat';
     this.selectedBlock=BLOCKS[0].id;
+    this.decorationMode=false;
     this.modalIds=['welcome','travel-modal','settings-modal','help-modal'];
     this.modalReturnFocus=new Map();
     this.confirmation=null;
@@ -29,6 +30,7 @@ export class GameUI {
     $('#map-button').addEventListener('click',()=>this.openTravel());
     $('#undo-button').addEventListener('click',()=>this.hooks.undo?.());
     $('#redo-button').addEventListener('click',()=>this.hooks.redo?.());
+    $('#decoration-mode').addEventListener('click',()=>this.toggleDecorationMode());
     $('#travel-button').addEventListener('click',()=>this.openTravel());
     $('#settings-button').addEventListener('click',()=>this.openSettings());
     $('#howto-button').addEventListener('click',()=>this.openModal('help-modal'));
@@ -52,7 +54,7 @@ export class GameUI {
     $('#reset-world').addEventListener('click',async()=>{
       if(await this.requestConfirmation({
         title:'重設這個世界？',
-        message:'重設會清除這台裝置上已放置與挖除的方塊，並回到初始台灣世界。',
+        message:'重設會清除這台裝置上已放置與挖除的方塊和道具，並回到初始台灣世界。',
         confirmLabel:'重設世界',
         danger:true,
       })){
@@ -72,7 +74,7 @@ export class GameUI {
         $('#import-world').focus();
         if(!await this.requestConfirmation({
           title:'匯入備份並取代目前世界？',
-          message:`備份包含 ${save.blocks.length.toLocaleString('zh-TW')} 個方塊，匯入後會完整取代目前世界。建議先匯出備份。`,
+          message:`備份包含 ${save.blocks.length.toLocaleString('zh-TW')} 個方塊和 ${(save.decorations?.length??0).toLocaleString('zh-TW')} 個裝飾道具，匯入後會完整取代目前世界。建議先匯出備份。`,
           confirmLabel:'匯入並取代',
           danger:true,
         }))return;
@@ -146,6 +148,29 @@ export class GameUI {
     this.hotbar.querySelector('.hotbar-slot.selected')?.scrollIntoView({block:'nearest',inline:'nearest'});
     const block=BLOCKS.find(item=>item.id===blockId);
     if(block)this.hooks.selectBlock?.(block);
+  }
+
+  toggleDecorationMode(){
+    if(this.isModalOpen())return;
+    this.setDecorationMode(!this.decorationMode);
+  }
+
+  setDecorationMode(enabled){
+    this.decorationMode=Boolean(enabled);
+    const button=$('#decoration-mode');
+    button.setAttribute('aria-pressed',String(this.decorationMode));
+    button.setAttribute('aria-label',this.decorationMode?'離開藍白拖道具模式':'進入裝飾道具模式');
+    button.title=this.decorationMode?'藍白拖道具模式（V）':'裝飾道具模式（V）';
+    $('#decoration-mode-label').textContent=this.decorationMode?'藍白拖':'道具';
+    $('#touch-mine').setAttribute('aria-label',this.decorationMode?'移除準星指向的藍白拖道具':'挖掘準星指向的方塊');
+    $('#touch-place').setAttribute('aria-label',this.decorationMode?'在準星指向的方塊上放置藍白拖':'在準星指向的位置放置方塊');
+    $('#touch-rotate-decoration').hidden=!this.decorationMode;
+    this.hooks.setDecorationMode?.(this.decorationMode);
+    this.showToast(this.decorationMode?'藍白拖模式：對準方塊上表面放置':'方塊模式');
+  }
+
+  rotateDecoration(){
+    if(this.decorationMode)this.hooks.rotateDecoration?.();
   }
 
   renderIslandRoutes(){
@@ -247,8 +272,9 @@ export class GameUI {
   showWelcome(){this.openModal('welcome');}
   isModalOpen(){return Boolean(this.confirmation)||this.modalIds.some(id=>!document.getElementById(id).classList.contains('hidden'));}
 
-  updateWorld({count,saved,message,canUndo,canRedo}={}){
+  updateWorld({count,decorationCount,saved,message,canUndo,canRedo}={}){
     if(count!==undefined)$('#block-count').textContent=Number(count).toLocaleString('zh-TW');
+    if(decorationCount!==undefined)$('#decoration-count').textContent=Number(decorationCount).toLocaleString('zh-TW');
     if(saved!==undefined)$('#save-state').textContent=saved?'已儲存':'儲存中…';
     if(canUndo!==undefined)$('#undo-button').disabled=!canUndo;
     if(canRedo!==undefined)$('#redo-button').disabled=!canRedo;
@@ -263,8 +289,15 @@ export class GameUI {
     }
   }
 
-  setTarget(block){
+  setTarget(block,decorationMode=false,decoration=null,rotation=0){
     const label=$('#target-label');
+    if(decorationMode){
+      if(decoration)label.textContent='藍白拖｜左鍵移除';
+      else if(block&&block.normal.y>.7)label.textContent=`藍白拖｜右鍵放置（${rotation*90}°）`;
+      else if(block)label.textContent='藍白拖只能放在方塊上表面';
+      else label.textContent=`藍白拖模式｜R 旋轉（${rotation*90}°）`;
+      label.hidden=false;return;
+    }
     if(!block){label.hidden=true;return;}
     const type=BLOCKS.find(item=>item.id===block.type);
     label.textContent=type?.name||'方塊';label.hidden=false;

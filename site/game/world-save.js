@@ -1,4 +1,5 @@
 import { BLOCKS, CONFIG_VERSION } from './config.js';
+import { MAX_WORLD_DECORATIONS, normalizeDecorationEntries } from './world-objects.js';
 
 export const MAX_WORLD_BLOCKS = 500_000;
 export const MAX_WORLD_SAVE_BYTES = 32 * 1024 * 1024;
@@ -20,7 +21,7 @@ function validateBlockKey(key) {
 
 export function validateWorldSave(save) {
   if (!save || typeof save !== 'object' || Array.isArray(save)) throw new TypeError('存檔格式必須是物件');
-  if (save.version !== CONFIG_VERSION) throw new RangeError('不支援這個存檔版本');
+  if (save.version !== 1 && save.version !== CONFIG_VERSION) throw new RangeError('不支援這個存檔版本');
   if (!Array.isArray(save.blocks)) throw new TypeError('存檔缺少方塊清單');
   if (save.blocks.length > MAX_WORLD_BLOCKS) throw new RangeError('方塊數量超出上限');
   const seen = new Set();
@@ -33,7 +34,17 @@ export function validateWorldSave(save) {
     seen.add(key);
     return [key, type];
   });
-  return { version: CONFIG_VERSION, blocks };
+  let decorations = [];
+  if (save.version === CONFIG_VERSION) decorations = normalizeDecorationEntries(save.decorations);
+  else if (save.decorations !== undefined) throw new TypeError('版本 1 存檔不能包含道具清單');
+  if (decorations.length > MAX_WORLD_DECORATIONS) throw new RangeError('道具數量超出上限');
+  const blockKeys = new Set(blocks.map(([key]) => key));
+  for (const [key] of decorations) {
+    if (blockKeys.has(key)) throw new TypeError(`道具座標被方塊佔用：${key}`);
+    const [x,y,z]=key.split(',').map(Number);
+    if (!blockKeys.has(`${x},${y-1},${z}`)) throw new RangeError(`道具缺少支撐方塊：${key}`);
+  }
+  return { version: CONFIG_VERSION, blocks, decorations };
 }
 
 export async function readWorldSaveFile(file) {

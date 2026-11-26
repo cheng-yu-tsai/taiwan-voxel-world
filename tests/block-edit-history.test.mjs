@@ -14,6 +14,18 @@ test('stores edits for undo and redo in the expected order', () => {
   assert.deepEqual(history.redo(), second);
 });
 
+test('keeps block and decoration edits in one undo and redo order', () => {
+  const history = new BlockEditHistory();
+  const block = { key: '0,1,0', before: null, after: 'stone' };
+  const decoration = { kind: 'decoration', key: '0,2,0', before: null, after: { type: 'flip-flops', rotation: 1 } };
+  history.record(block);
+  history.record(decoration);
+  assert.deepEqual(history.undo(), decoration);
+  assert.deepEqual(history.undo(), block);
+  assert.deepEqual(history.redo(), block);
+  assert.deepEqual(history.redo(), decoration);
+});
+
 test('clears redo history when a new edit follows an undo', () => {
   const history = new BlockEditHistory();
   history.record({ key: '0,0,0', before: null, after: 'grass' });

@@ -11,6 +11,7 @@ import {
 const validSave = {
   version: CONFIG_VERSION,
   blocks: [['0,0,0', 'grass'], ['-1,2,3', 'sign']],
+  decorations: [],
 };
 
 const file = ({name='backup.json', type='application/json', text=JSON.stringify(validSave), size=new TextEncoder().encode(text).byteLength}={}) => ({
@@ -34,6 +35,19 @@ test('rejects non-objects, incompatible versions, and missing block arrays', () 
   assert.throws(() => validateWorldSave({version: CONFIG_VERSION}), TypeError);
 });
 
+test('migrates version 1 block-only saves without changing block contents', () => {
+  const legacy = {version: 1, blocks: [['-4,2,3', 'brick']]};
+  assert.deepEqual(validateWorldSave(legacy), {version: CONFIG_VERSION, blocks: legacy.blocks, decorations: []});
+});
+
+test('validates and preserves decoration entries in version 2 saves', () => {
+  const save = {...validSave, decorations: [['0,1,0', 'flip-flops', 1]]};
+  assert.deepEqual(validateWorldSave(save), save);
+  assert.throws(() => validateWorldSave({...save, decorations: new Array(50_001)}), RangeError);
+  assert.throws(() => validateWorldSave({...save, decorations: [['3,1,4', 'flip-flops', 0]]}), RangeError);
+  assert.throws(() => validateWorldSave({...save, blocks: [...save.blocks, ['0,1,0', 'stone']]}), TypeError);
+});
+
 test('rejects oversized worlds and malformed block entries', () => {
   assert.throws(() => validateWorldSave({version: CONFIG_VERSION, blocks: new Array(MAX_WORLD_BLOCKS + 1)}), RangeError);
   assert.throws(() => validateWorldSave({...validSave, blocks: [null]}), TypeError);
@@ -54,6 +68,8 @@ test('loads a JSON backup with a supported extension and MIME type', async () =>
   assert.deepEqual(await readWorldSaveFile(file({name:'WORLD.JSON'})), validSave);
   assert.deepEqual(await readWorldSaveFile(file({type:''})), validSave);
   assert.deepEqual(await readWorldSaveFile(file({type:'text/plain'})), validSave);
+  const legacy = {version:1,blocks:[['-4,2,3','brick']]};
+  assert.deepEqual(await readWorldSaveFile(file({text:JSON.stringify(legacy)})), {version:CONFIG_VERSION,blocks:legacy.blocks,decorations:[]});
 });
 
 test('rejects unsupported filenames, MIME types, and sizes before reading', async () => {

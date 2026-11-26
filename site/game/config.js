@@ -65,4 +65,4 @@ export const CONTROL_DEFAULTS = {
   reach: 7,
 };
 
-export const CONFIG_VERSION = 1;
+export const CONFIG_VERSION = 2;

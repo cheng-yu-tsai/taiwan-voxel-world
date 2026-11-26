@@ -1,10 +1,12 @@
 import * as THREE from 'three';
-import { BLOCKS, CONFIG_VERSION, ISLANDS, WORLD_CONFIG } from './config.js';
+import { BLOCKS, CONFIG_VERSION, CONTROL_DEFAULTS, ISLANDS, WORLD_CONFIG } from './config.js';
 import { terrainHeight } from './terrain.js';
 import { ChunkBlockIndex } from './chunk-index.js';
 import { validateWorldSave, MAX_WORLD_SAVE_BYTES } from './world-save.js';
 import { islandAtPosition, isIslandPoint } from './island-geometry.js';
 import { BlockEditHistory } from './block-edit-history.js';
+import { canPlaceDecoration, decorationKey } from './world-objects.js';
+import { createDecorationModel, disposeDecorationModel } from './decoration-models.js';
 import { generateDefaultWorldContent } from './world-generation.js';
 import {
   crosswalkBlockEntries,
@@ -39,6 +41,8 @@ export class VoxelWorld {
     this.scene=scene;
     this.onChange=onChange;
     this.blocks=new Map();
+    this.decorations=new Map();
+    this.decorationMeshes=new Map();
     this.chunks=new Map();
     this.chunkIndex=new ChunkBlockIndex(WORLD_CONFIG.chunkSize);
     this.topHeights=new Map();
@@ -56,6 +60,8 @@ export class VoxelWorld {
 
   async generate(){
     this.blocks.clear();
+    this.decorations.clear();
+    this.clearDecorationMeshes();
     this.editHistory.clear();
     generateDefaultWorldContent(this);
     this.restoreSave();
@@ -180,6 +186,8 @@ export class VoxelWorld {
       if(!raw) return;
       const save=validateWorldSave(JSON.parse(raw));
       this.blocks=new Map(save.blocks);
+      this.decorations=new Map(save.decorations.map(([key,type,rotation])=>[key,{type,rotation}]));
+      this.renderDecorations();
     }catch(error){
       console.warn('Could not restore saved voxel world:',error);
       this.notifyChange({message:'讀取存檔失敗，已建立新世界'});
@@ -200,11 +208,19 @@ export class VoxelWorld {
     return this.topHeights.get(`${Math.floor(x)},${Math.floor(z)}`) ?? null;
   }
 
-  notifyChange(info={}){this.onChange({...info,...this.editHistory.status});}
+  notifyChange(info={}){this.onChange({decorationCount:this.decorations.size,...info,...this.editHistory.status});}
 
   getBlockCount(){return this.blocks.size;}
   getBlock(key){return this.blocks.get(key);}
-  exportSave(){return validateWorldSave({version:CONFIG_VERSION,blocks:[...this.blocks]});}
+  hasDecorationAt(x,y,z){return this.decorations.has(keyOf(x,y,z));}
+  hasDecorationAboveBlock(key){
+    const [x,y,z]=parseKey(key);
+    return this.decorations.has(keyOf(x,y+1,z));
+  }
+  exportSave(){
+    const decorations=[...this.decorations].map(([key,{type,rotation}])=>[key,type,rotation]);
+    return validateWorldSave({version:CONFIG_VERSION,blocks:[...this.blocks],decorations});
+  }
   importSave(save){
     const normalized=validateWorldSave(save);
     const raw=JSON.stringify(normalized);
@@ -213,15 +229,17 @@ export class VoxelWorld {
     catch(error){throw new Error('瀏覽器儲存空間不足，匯入未套用；目前世界仍保留', {cause:error});}
     clearTimeout(this.saveTimer);
     this.blocks=new Map(normalized.blocks);
+    this.decorations=new Map(normalized.decorations.map(([key,type,rotation])=>[key,{type,rotation}]));
     this.editHistory.clear();
     this.reindexColumns();
     this.rebuildAll();
+    this.renderDecorations();
     this.notifyChange({count:this.blocks.size,saved:true});
   }
   setBlock(x,y,z,type){
     const coords=[Math.floor(x),Math.floor(y),Math.floor(z)];
     const key=keyOf(...coords);
-    if(this.blocks.has(key)) return false;
+    if(this.blocks.has(key)||this.decorations.has(key)) return false;
     this.applyBlockChange(key,type);
     this.editHistory.record({key,before:null,after:type});
     this.notifyChange({count:this.blocks.size,saved:false});
@@ -231,6 +249,7 @@ export class VoxelWorld {
   removeBlock(key){
     if(!this.blocks.has(key)) return null;
     const [x,y,z]=parseKey(key), type=this.blocks.get(key);
+    if(this.decorations.has(keyOf(x,y+1,z))) return null;
     this.applyBlockChange(key,null);
     this.editHistory.record({key,before:type,after:null});
     this.notifyChange({count:this.blocks.size,saved:false});
@@ -259,15 +278,70 @@ export class VoxelWorld {
   undo(){
     const edit=this.editHistory.undo();
     if(!edit)return false;
-    this.applyBlockChange(edit.key,edit.before);
+    if(edit.kind==='decoration')this.applyDecorationChange(edit.key,edit.before);
+    else this.applyBlockChange(edit.key,edit.before);
     return true;
   }
 
   redo(){
     const edit=this.editHistory.redo();
     if(!edit)return false;
-    this.applyBlockChange(edit.key,edit.after);
+    if(edit.kind==='decoration')this.applyDecorationChange(edit.key,edit.after);
+    else this.applyBlockChange(edit.key,edit.after);
     return true;
+  }
+
+  placeDecoration(x,y,z,type,rotation=0){
+    let key;
+    try{key=decorationKey(x,y,z);}catch{return false;}
+    if(!canPlaceDecoration(this.blocks,this.decorations,key,type,rotation))return false;
+    const decoration={type,rotation};
+    this.applyDecorationChange(key,decoration);
+    this.editHistory.record({kind:'decoration',key,before:null,after:decoration});
+    this.notifyChange({count:this.blocks.size,saved:false});
+    return true;
+  }
+
+  removeDecoration(key){
+    const decoration=this.decorations.get(key);
+    if(!decoration)return null;
+    const [x,y,z]=parseKey(key);
+    this.applyDecorationChange(key,null);
+    this.editHistory.record({kind:'decoration',key,before:decoration,after:null});
+    this.notifyChange({count:this.blocks.size,saved:false});
+    return {x,y,z,...decoration};
+  }
+
+  applyDecorationChange(key,decoration){
+    if(decoration===null)this.decorations.delete(key);
+    else this.decorations.set(key,decoration);
+    this.renderDecoration(key);
+    this.scheduleSave();
+  }
+
+  renderDecoration(key){
+    const previous=this.decorationMeshes.get(key);
+    if(previous){this.scene.remove(previous);disposeDecorationModel(previous);this.decorationMeshes.delete(key);}
+    const decoration=this.decorations.get(key);
+    if(!decoration)return;
+    const [x,y,z]=parseKey(key);
+    const model=createDecorationModel(decoration,key);
+    model.position.set(x+.5,y,z+.5);
+    this.scene.add(model);
+    this.decorationMeshes.set(key,model);
+  }
+
+  renderDecorations(){
+    this.clearDecorationMeshes();
+    for(const key of this.decorations.keys())this.renderDecoration(key);
+  }
+
+  clearDecorationMeshes(){
+    for(const model of this.decorationMeshes.values()){
+      this.scene.remove(model);
+      disposeDecorationModel(model);
+    }
+    this.decorationMeshes.clear();
   }
 
   rebuildAround(x,y,z){
@@ -343,6 +417,17 @@ export class VoxelWorld {
     return {key,distance:hit.distance,normal:hit.face.normal.clone(),point:hit.point,type:this.blocks.get(key)};
   }
 
+  raycastDecoration(raycaster){
+    const hits=raycaster.intersectObjects([...this.decorationMeshes.values()],true);
+    const hit=hits[0];
+    if(!hit||hit.distance>CONTROL_DEFAULTS.reach)return null;
+    let object=hit.object;
+    while(object&&!object.userData.decorationKey)object=object.parent;
+    const key=object?.userData.decorationKey;
+    const decoration=this.decorations.get(key);
+    return decoration?{key,...decoration,distance:hit.distance}:null;
+  }
+
   getSpawnPoint(islandId){
     const island=this.islandById.get(islandId)||ISLANDS[0];
     const start=island.spawn;
@@ -364,7 +449,7 @@ export class VoxelWorld {
     this.notifyChange({count:this.blocks.size,saved:false});
     this.saveTimer=setTimeout(()=>{
       try{
-        localStorage.setItem(WORLD_CONFIG.saveKey,JSON.stringify({version:CONFIG_VERSION,blocks:[...this.blocks]}));
+        localStorage.setItem(WORLD_CONFIG.saveKey,JSON.stringify(this.exportSave()));
         this.notifyChange({count:this.blocks.size,saved:true});
       }catch(error){
         console.warn('Could not save voxel world:',error);
