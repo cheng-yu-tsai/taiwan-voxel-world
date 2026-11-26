@@ -169,9 +169,11 @@ export class GameUI {
   showWelcome(){this.openModal('welcome');}
   isModalOpen(){return this.modalIds.some(id=>!document.getElementById(id).classList.contains('hidden'));}
 
-  updateWorld({count,saved,message}={}){
+  updateWorld({count,saved,message,canUndo,canRedo}={}){
     if(count!==undefined)$('#block-count').textContent=Number(count).toLocaleString('zh-TW');
     if(saved!==undefined)$('#save-state').textContent=saved?'已儲存':'儲存中…';
+    if(canUndo!==undefined)$('#undo-button').disabled=!canUndo;
+    if(canRedo!==undefined)$('#redo-button').disabled=!canRedo;
     if(message)this.showToast(message);
   }
 

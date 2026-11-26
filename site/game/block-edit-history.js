@@ -28,4 +28,8 @@ export class BlockEditHistory {
     this.undoStack.length = 0;
     this.redoStack.length = 0;
   }
+
+  get status() {
+    return { canUndo: this.undoStack.length > 0, canRedo: this.redoStack.length > 0 };
+  }
 }

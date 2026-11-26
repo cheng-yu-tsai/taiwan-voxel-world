@@ -38,3 +38,14 @@ test('requires a positive integer history limit', () => {
   assert.throws(() => new BlockEditHistory(0), RangeError);
   assert.throws(() => new BlockEditHistory(1.5), RangeError);
 });
+
+test('reports which history actions are currently available', () => {
+  const history = new BlockEditHistory();
+  assert.deepEqual(history.status, { canUndo: false, canRedo: false });
+  history.record({ key: '0,0,0', before: null, after: 'grass' });
+  assert.deepEqual(history.status, { canUndo: true, canRedo: false });
+  history.undo();
+  assert.deepEqual(history.status, { canUndo: false, canRedo: true });
+  history.clear();
+  assert.deepEqual(history.status, { canUndo: false, canRedo: false });
+});

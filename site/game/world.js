@@ -46,7 +46,7 @@ export class VoxelWorld {
     this.restoreSave();
     this.reindexColumns();
     this.rebuildAll();
-    this.onChange({count:this.blocks.size,saved:false});
+    this.notifyChange({count:this.blocks.size,saved:false});
   }
 
   generateIsland(island){
@@ -124,7 +124,7 @@ export class VoxelWorld {
       this.blocks=new Map(save.blocks.filter(entry=>Array.isArray(entry)&&entry.length===2&&isValidBlockKey(entry[0])&&typeof entry[1]==='string'));
     }catch(error){
       console.warn('Could not restore saved voxel world:',error);
-      this.onChange({message:'讀取存檔失敗，已建立新世界'});
+      this.notifyChange({message:'讀取存檔失敗，已建立新世界'});
     }
   }
 
@@ -142,6 +142,8 @@ export class VoxelWorld {
     return this.topHeights.get(`${Math.floor(x)},${Math.floor(z)}`) ?? null;
   }
 
+  notifyChange(info={}){this.onChange({...info,...this.editHistory.status});}
+
   getBlockCount(){return this.blocks.size;}
   getBlock(key){return this.blocks.get(key);}
   exportSave(){return validateWorldSave({version:CONFIG_VERSION,blocks:[...this.blocks]});}
@@ -156,7 +158,7 @@ export class VoxelWorld {
     this.editHistory.clear();
     this.reindexColumns();
     this.rebuildAll();
-    this.onChange({count:this.blocks.size,saved:true});
+    this.notifyChange({count:this.blocks.size,saved:true});
   }
   setBlock(x,y,z,type){
     const coords=[Math.floor(x),Math.floor(y),Math.floor(z)];
@@ -164,6 +166,7 @@ export class VoxelWorld {
     if(this.blocks.has(key)) return false;
     this.applyBlockChange(key,type);
     this.editHistory.record({key,before:null,after:type});
+    this.notifyChange({count:this.blocks.size,saved:false});
     return true;
   }
 
@@ -172,6 +175,7 @@ export class VoxelWorld {
     const [x,y,z]=parseKey(key), type=this.blocks.get(key);
     this.applyBlockChange(key,null);
     this.editHistory.record({key,before:type,after:null});
+    this.notifyChange({count:this.blocks.size,saved:false});
     return {x,y,z,type};
   }
 
@@ -299,14 +303,14 @@ export class VoxelWorld {
 
   scheduleSave(){
     clearTimeout(this.saveTimer);
-    this.onChange({count:this.blocks.size,saved:false});
+    this.notifyChange({count:this.blocks.size,saved:false});
     this.saveTimer=setTimeout(()=>{
       try{
         localStorage.setItem(WORLD_CONFIG.saveKey,JSON.stringify({version:CONFIG_VERSION,blocks:[...this.blocks]}));
-        this.onChange({count:this.blocks.size,saved:true});
+        this.notifyChange({count:this.blocks.size,saved:true});
       }catch(error){
         console.warn('Could not save voxel world:',error);
-        this.onChange({message:'儲存空間不足，請匯出或重設世界'});
+        this.notifyChange({message:'儲存空間不足，請匯出或重設世界'});
       }
     },220);
   }
