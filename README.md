@@ -8,6 +8,7 @@
 - [技術、效能與素材流程建議](knowledge/tech-roadmap.md)
 - [開發用效能量測頁](site/benchmark.html)
 - [待決策事項與建議](knowledge/decision.md)
+- [原型內容目錄](knowledge/content-catalog.md)
 - [遊戲入口](site/index.html)
 
 ## 目前原型
