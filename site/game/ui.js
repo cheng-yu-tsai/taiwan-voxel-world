@@ -11,6 +11,7 @@ export class GameUI {
     this.activeTransport='boat';
     this.selectedBlock=BLOCKS[0].id;
     this.modalIds=['welcome','travel-modal','settings-modal','help-modal'];
+    this.modalReturnFocus=new Map();
     this.confirmation=null;
     this.hotbar=$('#hotbar');
     this.islandList=$('#island-list');
@@ -34,16 +35,10 @@ export class GameUI {
     document.querySelectorAll('[data-close]').forEach(button=>button.addEventListener('click',()=>this.closeModal(button.dataset.close)));
     document.querySelectorAll('.modal-backdrop').forEach(backdrop=>{
       backdrop.addEventListener('mousedown',event=>{if(event.target===backdrop&&backdrop.id!=='welcome')this.closeModal(backdrop.id);});
+      backdrop.addEventListener('keydown',event=>this.keepFocusInside(event,backdrop));
     });
     $('#confirm-cancel').addEventListener('click',()=>this.finishConfirmation(false));
     $('#confirm-accept').addEventListener('click',()=>this.finishConfirmation(true));
-    $('#confirm-modal').addEventListener('keydown',event=>{
-      if(event.key!=='Tab')return;
-      const buttons=$('#confirm-modal').querySelectorAll('button:not([disabled])');
-      const first=buttons[0],last=buttons[buttons.length-1];
-      if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
-      else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
-    });
     document.querySelectorAll('[data-transport]').forEach(button=>button.addEventListener('click',()=>this.setTransport(button.dataset.transport)));
     $('#sensitivity').addEventListener('input',event=>{
       const value=Number(event.target.value);
@@ -63,7 +58,6 @@ export class GameUI {
       })){
         this.hooks.reset?.();
         this.closeModal('settings-modal');
-        $('#settings-button').focus();
         this.showToast('世界已回到初始樣子');
       }
     });
@@ -84,7 +78,6 @@ export class GameUI {
         }))return;
         this.hooks.importWorld?.(save);
         this.closeModal('settings-modal');
-        $('#settings-button').focus();
         this.showToast('世界存檔已匯入');
       }catch(error){
         console.warn('Could not import voxel world:',error);
@@ -181,7 +174,37 @@ export class GameUI {
   }
 
   openModal(id){
+    const previouslyOpen=this.modalIds.find(modalId=>modalId!==id&&!document.getElementById(modalId).classList.contains('hidden'));
+    const returnFocus=previouslyOpen?this.modalReturnFocus.get(previouslyOpen):document.activeElement;
+    if(previouslyOpen)this.modalReturnFocus.delete(previouslyOpen);
+    this.modalReturnFocus.set(id,returnFocus);
     this.modalIds.forEach(modalId=>document.getElementById(modalId).classList.toggle('hidden',modalId!==id));
+    this.focusModal(id);
+  }
+
+  focusableElements(container){
+    return [...container.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')]
+      .filter(element=>element.getClientRects().length>0);
+  }
+
+  focusModal(id){
+    const modal=document.getElementById(id);
+    this.focusableElements(modal)[0]?.focus();
+  }
+
+  keepFocusInside(event,modal){
+    if(event.key!=='Tab'||modal.classList.contains('hidden'))return;
+    const focusable=this.focusableElements(modal);
+    if(!focusable.length)return;
+    const first=focusable[0],last=focusable[focusable.length-1];
+    if(!modal.contains(document.activeElement)){
+      event.preventDefault();
+      (event.shiftKey?last:first).focus();
+    }else if(event.shiftKey&&document.activeElement===first){
+      event.preventDefault();last.focus();
+    }else if(!event.shiftKey&&document.activeElement===last){
+      event.preventDefault();first.focus();
+    }
   }
 
   requestConfirmation({title,message,confirmLabel='確定',danger=false}){
@@ -209,7 +232,12 @@ export class GameUI {
 
   closeModal(id){
     if(id==='confirm-modal'){this.finishConfirmation(false);return;}
-    document.getElementById(id)?.classList.add('hidden');
+    const modal=document.getElementById(id);
+    if(!modal||modal.classList.contains('hidden'))return;
+    modal.classList.add('hidden');
+    const returnFocus=this.modalReturnFocus.get(id);
+    this.modalReturnFocus.delete(id);
+    if(returnFocus?.isConnected)returnFocus.focus();
   }
   closeTopModal(){
     if(this.confirmation){this.finishConfirmation(false);return true;}
