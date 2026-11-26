@@ -114,7 +114,7 @@
 
 - [x] 建立靜態概念首頁（`site/index.html`）。
 - [x] 新增 GitHub Actions Pages 部署工作流程（`.github/workflows/deploy.yml`）。
-- [x] 讓目標為 main 的 PR 與 Pages 部署前執行完整 Node 測試，並要求至少 80% 整體行／分支／函式覆蓋率。
+- [x] 讓目標為 main 的 PR 與 Pages 部署前檢查遊戲模組語法、執行完整 Node 測試，並要求至少 80% 整體行／分支／函式覆蓋率。
 - [x] 新增專案 README 與 Pages 設定說明。
 - [x] 建立公開 GitHub repository 並推送專案。
 - [x] 設定 Pages 使用 GitHub Actions，首次部署成功；網站可於 https://cheng-yu-tsai.github.io/taiwan-voxel-world/ 瀏覽。
