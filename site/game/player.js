@@ -71,6 +71,9 @@ export class FirstPersonPlayer {
     if(event.code==='KeyV'){
       event.preventDefault();this.ui.toggleDecorationMode();return;
     }
+    if(event.code==='KeyQ'&&this.ui.decorationMode){
+      event.preventDefault();this.ui.cycleDecoration();return;
+    }
     if(event.code==='KeyR'&&this.ui.decorationMode){
       event.preventDefault();this.ui.rotateDecoration();return;
     }

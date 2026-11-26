@@ -7,6 +7,11 @@ import {
   normalizeDecorationEntries,
 } from '../site/game/world-objects.js';
 
+test('offers distinct placeable flip-flops and baseball bat decorations', () => {
+  assert.deepEqual(DECORATIONS.map(({id,name})=>[id,name]), [['flip-flops','藍白拖'],['baseball-bat','球棒']]);
+  assert.equal(new Set(DECORATIONS.map(item=>item.id)).size, DECORATIONS.length);
+});
+
 test('uses stable integer-cell keys for decoration anchors', () => {
   assert.equal(decorationKey(-4, 3, 9), '-4,3,9');
   assert.throws(() => decorationKey(0.5, 1, 0), TypeError);
@@ -16,6 +21,7 @@ test('uses stable integer-cell keys for decoration anchors', () => {
 test('accepts a supported decoration on top of an empty supported cell', () => {
   const type = DECORATIONS[0].id;
   assert.equal(canPlaceDecoration(new Map([['-2,4,7', 'grass']]), new Map(), '-2,5,7', type, 0), true);
+  assert.equal(canPlaceDecoration(new Map([['-2,4,7', 'grass']]), new Map(), '-2,5,7', 'baseball-bat', 2), true);
 });
 
 test('rejects unsupported, occupied, duplicate, unsupported-type and invalid-rotation placements', () => {

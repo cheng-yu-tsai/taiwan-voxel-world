@@ -24,6 +24,7 @@
         <button class="icon-button edit-history-button" id="undo-button" aria-label="復原上一步" title="復原上一步（Ctrl+Z）">↶ <span>復原</span></button>
         <button class="icon-button edit-history-button" id="redo-button" aria-label="重做上一步" title="重做上一步（Ctrl+Y）">↷ <span>重做</span></button>
         <button class="icon-button" id="decoration-mode" type="button" aria-label="進入裝飾道具模式" aria-pressed="false" title="裝飾道具模式（V）">◇ <span id="decoration-mode-label">道具</span></button>
+        <select class="decoration-select" id="decoration-select" aria-label="選擇裝飾道具" hidden></select>
         <button class="icon-button" id="map-button" aria-label="交通地圖" title="交通地圖（M）">⌖ <span>地圖</span></button>
         <button class="icon-button" id="settings-button" aria-label="遊戲設定" title="遊戲設定">⚙</button>
       </div>
@@ -48,7 +49,7 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <section class="bottom-hud" aria-label="遊戲物品欄">
-      <div class="action-hint"><span class="desktop-hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移動 <span>·</span> <kbd>Shift</kbd> 快跑 <span>·</span> 點擊挖掘 <span>·</span> 右鍵放置 <span>·</span> <kbd>V</kbd> 道具模式 <span>·</span> <kbd>M</kbd> 交通</span><span class="touch-hint">拖曳轉向・觸控按鈕移動、快跑、跳躍、挖掘與放置；頂部可切換道具模式</span></div>
+      <div class="action-hint"><span class="desktop-hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移動 <span>·</span> <kbd>Shift</kbd> 快跑 <span>·</span> 點擊挖掘 <span>·</span> 右鍵放置 <span>·</span> <kbd>V</kbd> 道具模式 <span>·</span> <kbd>Q</kbd> 選道具 <span>·</span> <kbd>R</kbd> 旋轉 <span>·</span> <kbd>M</kbd> 交通</span><span class="touch-hint">拖曳轉向・觸控按鈕移動、快跑、跳躍、挖掘與放置；頂部可選裝飾道具</span></div>
       <div class="hotbar" id="hotbar"></div>
     </section>
 
@@ -111,7 +112,7 @@
     </div>
 
     <div class="modal-backdrop hidden" id="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-title">
-      <div class="dialog-card help-card"><button class="close-button" data-close="help-modal" aria-label="關閉">×</button><p class="eyebrow">HOW TO PLAY</p><h2 id="help-title">幾個熟悉的按鍵</h2><div class="help-grid"><span><kbd>W A S D</kbd></span><b>移動</b><span><kbd>Shift</kbd></span><b>快跑</b><span><kbd>空白鍵</kbd></span><b>跳躍</b><span><kbd>滑鼠</kbd></span><b>轉動視角</b><span><kbd>左鍵</kbd></span><b>挖掘方塊或移除道具</b><span><kbd>右鍵</kbd></span><b>放置方塊或道具</b><span><kbd>V</kbd></span><b>切換方塊／藍白拖道具模式</b><span><kbd>R</kbd></span><b>旋轉道具（道具模式）</b><span><kbd>Ctrl+Z</kbd></span><b>復原上一步</b><span><kbd>Ctrl+Y</kbd></span><b>重做上一步</b><span><kbd>1–9、0</kbd></span><b>選擇方塊</b><span><kbd>M</kbd></span><b>開啟交通地圖</b><span><kbd>Esc</kbd></span><b>釋放滑鼠</b><span><kbd>觸控</kbd></span><b>拖曳轉向，使用畫面按鈕移動、快跑、跳躍、挖掘、放置、旋轉、復原和重做</b></div><p class="help-tip">方塊模式可用十格快捷欄；切到道具模式後，藍白拖可放在方塊上表面，按左鍵或觸控挖掘即可移除。移除支撐方塊前，先移除上方道具。</p></div>
+      <div class="dialog-card help-card"><button class="close-button" data-close="help-modal" aria-label="關閉">×</button><p class="eyebrow">HOW TO PLAY</p><h2 id="help-title">幾個熟悉的按鍵</h2><div class="help-grid"><span><kbd>W A S D</kbd></span><b>移動</b><span><kbd>Shift</kbd></span><b>快跑</b><span><kbd>空白鍵</kbd></span><b>跳躍</b><span><kbd>滑鼠</kbd></span><b>轉動視角</b><span><kbd>左鍵</kbd></span><b>挖掘方塊或移除道具</b><span><kbd>右鍵</kbd></span><b>放置方塊或道具</b><span><kbd>V</kbd></span><b>切換方塊／裝飾道具模式</b><span><kbd>Q</kbd></span><b>選擇下一件裝飾道具</b><span><kbd>R</kbd></span><b>旋轉道具（道具模式）</b><span><kbd>Ctrl+Z</kbd></span><b>復原上一步</b><span><kbd>Ctrl+Y</kbd></span><b>重做上一步</b><span><kbd>1–9、0</kbd></span><b>選擇方塊</b><span><kbd>M</kbd></span><b>開啟交通地圖</b><span><kbd>Esc</kbd></span><b>釋放滑鼠</b><span><kbd>觸控</kbd></span><b>拖曳轉向，使用畫面按鈕移動、快跑、跳躍、挖掘、放置、旋轉、復原和重做</b></div><p class="help-tip">方塊模式可用十格快捷欄；切到道具模式後，可用上方選單選取藍白拖或球棒，放在方塊上表面後再旋轉或移除。移除支撐方塊前，先移除上方道具。</p></div>
     </div>
 
     <div class="loading-screen" id="loading"><div class="loading-logo"><span class="brand-mark">島</span></div><b>正在生成台灣群島</b><span class="loading-track"><i></i></span><small>山脈、街角和海岸就快好了</small></div>

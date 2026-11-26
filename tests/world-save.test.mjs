@@ -41,7 +41,7 @@ test('migrates version 1 block-only saves without changing block contents', () =
 });
 
 test('validates and preserves decoration entries in version 2 saves', () => {
-  const save = {...validSave, decorations: [['0,1,0', 'flip-flops', 1]]};
+  const save = {...validSave, decorations: [['0,1,0', 'flip-flops', 1], ['-1,3,3', 'baseball-bat', 2]]};
   assert.deepEqual(validateWorldSave(save), save);
   assert.throws(() => validateWorldSave({...save, decorations: new Array(50_001)}), RangeError);
   assert.throws(() => validateWorldSave({...save, decorations: [['3,1,4', 'flip-flops', 0]]}), RangeError);

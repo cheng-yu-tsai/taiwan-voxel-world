@@ -41,7 +41,7 @@ function makeCloud(x,y,z,scale){
 }
 const clouds=[makeCloud(-22,20,-17,2.8),makeCloud(12,23,4,2.2),makeCloud(32,17,-8,2.5),makeCloud(-6,18,24,1.8)];
 
-let world,player,quality='high',lastLocation='',selectedBlock=BLOCKS[0],decorationMode=false,decorationRotation=0;
+let world,player,quality='high',lastLocation='',selectedBlock=BLOCKS[0],selectedDecoration=DECORATIONS[0],decorationMode=false,decorationRotation=0;
 function editHistory(redo){
   const changed=redo?world?.redo():world?.undo();
   if(changed)ui.showToast(redo?'已重做上一步':'已復原上一步');
@@ -50,10 +50,11 @@ const ui=new GameUI({
   start:()=>player?.requestLock(),
   releasePointer:()=>player?.releaseLock(),
   selectBlock:block=>{selectedBlock=block;},
+  selectDecoration:decoration=>{selectedDecoration=decoration;},
   setDecorationMode:enabled=>{decorationMode=enabled;},
   rotateDecoration:()=>{
     decorationRotation=(decorationRotation+1)%4;
-    ui.showToast(`藍白拖旋轉至 ${decorationRotation*90}°`);
+    ui.showToast(`${selectedDecoration.name}旋轉至 ${decorationRotation*90}°`);
   },
   travel:(island,transport)=>{
     if(!player)return;
@@ -121,20 +122,20 @@ function interact(button){
     if(button===0){
       const target=world.raycastDecoration(raycaster);
       const removed=target&&world.removeDecoration(target.key);
-      if(removed)ui.showToast('移除藍白拖');
+      if(removed)ui.showToast(`移除${DECORATIONS.find(item=>item.id===removed.type)?.name||'裝飾道具'}`);
       return;
     }
     if(button===2){
       const hit=world.raycast(raycaster);
       if(!hit)return;
-      if(hit.normal.y<.7){ui.showToast('藍白拖只能放在方塊上表面');return;}
+      if(hit.normal.y<.7){ui.showToast(`${selectedDecoration.name}只能放在方塊上表面`);return;}
       const [x,y,z]=hit.key.split(',').map(Number);
       const objectY=y+1;
       const overlapsPlayer=x===Math.floor(player.position.x)&&z===Math.floor(player.position.z)
         &&objectY>=Math.floor(player.position.y)&&objectY<=Math.floor(player.position.y+1.8);
-      if(overlapsPlayer){ui.showToast('請把藍白拖放在玩家腳邊以外');return;}
-      if(world.placeDecoration(x,objectY,z,DECORATIONS[0].id,decorationRotation))ui.showToast('放置藍白拖');
-      else ui.showToast('此處不能放置藍白拖');
+      if(overlapsPlayer){ui.showToast('請把裝飾道具放在玩家腳邊以外');return;}
+      if(world.placeDecoration(x,objectY,z,selectedDecoration.id,decorationRotation))ui.showToast(`放置${selectedDecoration.name}`);
+      else ui.showToast(`此處不能放置${selectedDecoration.name}`);
       return;
     }
   }
@@ -142,7 +143,7 @@ function interact(button){
   if(!hit)return;
   if(button===0){
     if(world.hasDecorationAboveBlock(hit.key)){
-      ui.showToast('請先切換道具模式移除上方的藍白拖');
+      ui.showToast('請先切換道具模式移除上方的裝飾道具');
       return;
     }
     const removed=world.removeBlock(hit.key);
@@ -151,7 +152,7 @@ function interact(button){
     const [x,y,z]=hit.key.split(',').map(Number),n=hit.normal;
     const bx=x+Math.round(n.x),by=y+Math.round(n.y),bz=z+Math.round(n.z);
     const overlapsPlayer=bx===Math.floor(player.position.x)&&bz===Math.floor(player.position.z)&&by>=Math.floor(player.position.y)&&by<=Math.floor(player.position.y+1.8);
-    if(world.hasDecorationAt(bx,by,bz)){ui.showToast('請先切換道具模式移除該處的藍白拖');return;}
+    if(world.hasDecorationAt(bx,by,bz)){ui.showToast('請先切換道具模式移除該處的裝飾道具');return;}
     if(!overlapsPlayer&&world.setBlock(bx,by,bz,selectedBlock.id))ui.showToast(`放置${selectedBlock.name}`);
   }
 }
@@ -173,7 +174,7 @@ function animate(timestamp){
     raycaster.setFromCamera(screenCenter,camera);
     const target=world.raycast(raycaster);
     const decoration=decorationMode?world.raycastDecoration(raycaster):null;
-    ui.setTarget(target,decorationMode,decoration,decorationRotation);
+    ui.setTarget(target,decorationMode,decoration,decorationRotation,selectedDecoration.name);
     hudClock+=dt;
     if(hudClock>.22){ui.updatePlayer(player.position,player.currentIsland);hudClock=0;}
   }

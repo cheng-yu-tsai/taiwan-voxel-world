@@ -1,4 +1,5 @@
 import { BLOCKS, ISLANDS } from './config.js';
+import { DECORATIONS } from './world-objects.js';
 import { hotkeyForIndex } from './hotbar.js';
 import { readWorldSaveFile } from './world-save.js';
 
@@ -10,15 +11,23 @@ export class GameUI {
     this.toastTimer=0;
     this.activeTransport='boat';
     this.selectedBlock=BLOCKS[0].id;
+    this.selectedDecoration=DECORATIONS[0];
     this.decorationMode=false;
     this.modalIds=['welcome','travel-modal','settings-modal','help-modal'];
     this.modalReturnFocus=new Map();
     this.confirmation=null;
     this.hotbar=$('#hotbar');
     this.islandList=$('#island-list');
+    this.decorationSelect=$('#decoration-select');
+    DECORATIONS.forEach(decoration=>{
+      const option=document.createElement('option');
+      option.value=decoration.id;option.textContent=decoration.name;
+      this.decorationSelect.append(option);
+    });
     this.renderHotbar();
     this.renderIslandRoutes();
     this.bindEvents();
+    this.selectDecoration(this.selectedDecoration.id);
     this.loadSettings();
   }
 
@@ -31,6 +40,7 @@ export class GameUI {
     $('#undo-button').addEventListener('click',()=>this.hooks.undo?.());
     $('#redo-button').addEventListener('click',()=>this.hooks.redo?.());
     $('#decoration-mode').addEventListener('click',()=>this.toggleDecorationMode());
+    this.decorationSelect.addEventListener('change',()=>this.selectDecoration(this.decorationSelect.value,true));
     $('#travel-button').addEventListener('click',()=>this.openTravel());
     $('#settings-button').addEventListener('click',()=>this.openSettings());
     $('#howto-button').addEventListener('click',()=>this.openModal('help-modal'));
@@ -155,18 +165,40 @@ export class GameUI {
     this.setDecorationMode(!this.decorationMode);
   }
 
+  selectDecoration(decorationId,announce=false){
+    const decoration=DECORATIONS.find(item=>item.id===decorationId);
+    if(!decoration)return;
+    this.selectedDecoration=decoration;
+    this.decorationSelect.value=decoration.id;
+    $('#decoration-mode-label').textContent=this.decorationMode?decoration.name:'道具';
+    $('#decoration-mode').setAttribute('aria-label',this.decorationMode?`離開${decoration.name}道具模式`:'進入裝飾道具模式');
+    $('#touch-place').setAttribute('aria-label',this.decorationMode?`放置${decoration.name}到準星指向的方塊`:'在準星指向的位置放置方塊');
+    $('#touch-rotate-decoration').setAttribute('aria-label',`旋轉目前的${decoration.name}道具`);
+    this.hooks.selectDecoration?.(decoration);
+    if(announce)this.showToast(`已選擇${decoration.name}`);
+  }
+
+  cycleDecoration(){
+    if(!this.decorationMode)return;
+    const index=DECORATIONS.findIndex(item=>item.id===this.selectedDecoration.id);
+    const next=DECORATIONS[(index+1)%DECORATIONS.length];
+    this.selectDecoration(next.id,true);
+  }
+
   setDecorationMode(enabled){
     this.decorationMode=Boolean(enabled);
     const button=$('#decoration-mode');
     button.setAttribute('aria-pressed',String(this.decorationMode));
-    button.setAttribute('aria-label',this.decorationMode?'離開藍白拖道具模式':'進入裝飾道具模式');
-    button.title=this.decorationMode?'藍白拖道具模式（V）':'裝飾道具模式（V）';
-    $('#decoration-mode-label').textContent=this.decorationMode?'藍白拖':'道具';
-    $('#touch-mine').setAttribute('aria-label',this.decorationMode?'移除準星指向的藍白拖道具':'挖掘準星指向的方塊');
-    $('#touch-place').setAttribute('aria-label',this.decorationMode?'在準星指向的方塊上放置藍白拖':'在準星指向的位置放置方塊');
+    button.setAttribute('aria-label',this.decorationMode?`離開${this.selectedDecoration.name}道具模式`:'進入裝飾道具模式');
+    button.title=this.decorationMode?`${this.selectedDecoration.name}道具模式（V）`:'裝飾道具模式（V）';
+    $('#decoration-mode-label').textContent=this.decorationMode?this.selectedDecoration.name:'道具';
+    this.decorationSelect.hidden=!this.decorationMode;
+    $('#touch-mine').setAttribute('aria-label',this.decorationMode?'移除準星指向的裝飾道具':'挖掘準星指向的方塊');
+    $('#touch-place').setAttribute('aria-label',this.decorationMode?`放置${this.selectedDecoration.name}到準星指向的方塊`:'在準星指向的位置放置方塊');
+    $('#touch-rotate-decoration').setAttribute('aria-label',`旋轉目前的${this.selectedDecoration.name}道具`);
     $('#touch-rotate-decoration').hidden=!this.decorationMode;
     this.hooks.setDecorationMode?.(this.decorationMode);
-    this.showToast(this.decorationMode?'藍白拖模式：對準方塊上表面放置':'方塊模式');
+    this.showToast(this.decorationMode?`${this.selectedDecoration.name}模式：Q 選道具、R 旋轉`:'方塊模式');
   }
 
   rotateDecoration(){
@@ -289,13 +321,16 @@ export class GameUI {
     }
   }
 
-  setTarget(block,decorationMode=false,decoration=null,rotation=0){
+  setTarget(block,decorationMode=false,decoration=null,rotation=0,selectedDecorationName=this.selectedDecoration.name){
     const label=$('#target-label');
     if(decorationMode){
-      if(decoration)label.textContent='藍白拖｜左鍵移除';
-      else if(block&&block.normal.y>.7)label.textContent=`藍白拖｜右鍵放置（${rotation*90}°）`;
-      else if(block)label.textContent='藍白拖只能放在方塊上表面';
-      else label.textContent=`藍白拖模式｜R 旋轉（${rotation*90}°）`;
+      if(decoration){
+        const hitName=DECORATIONS.find(item=>item.id===decoration.type)?.name||'裝飾道具';
+        label.textContent=`${hitName}｜左鍵移除`;
+      }
+      else if(block&&block.normal.y>.7)label.textContent=`${selectedDecorationName}｜右鍵放置（${rotation*90}°）`;
+      else if(block)label.textContent=`${selectedDecorationName}只能放在方塊上表面`;
+      else label.textContent=`${selectedDecorationName}模式｜Q 選道具、R 旋轉（${rotation*90}°）`;
       label.hidden=false;return;
     }
     if(!block){label.hidden=true;return;}

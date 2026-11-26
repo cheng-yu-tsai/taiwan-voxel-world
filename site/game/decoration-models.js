@@ -5,15 +5,24 @@ const soleBottomGeometry=new THREE.BoxGeometry(.24,.038,.48);
 const soleTopGeometry=new THREE.BoxGeometry(.21,.012,.445);
 const strapGeometry=new THREE.BoxGeometry(.018,.018,.22);
 const toePostGeometry=new THREE.SphereGeometry(.014,8,6);
+const batBarrelGeometry=new THREE.CylinderGeometry(.062,.03,.52,10);
+const batHandleGeometry=new THREE.CylinderGeometry(.024,.021,.18,8);
+const batGripGeometry=new THREE.CylinderGeometry(.026,.024,.105,8);
+const batBandGeometry=new THREE.CylinderGeometry(.032,.032,.012,8);
+const batKnobGeometry=new THREE.CylinderGeometry(.032,.025,.03,8);
 const soleBottomMaterial=new THREE.MeshLambertMaterial({color:'#245e7d'});
 const soleTopMaterial=new THREE.MeshLambertMaterial({color:'#5b9cba'});
 const strapMaterial=new THREE.MeshLambertMaterial({color:'#f5f0dc'});
+const batMaterial=new THREE.MeshLambertMaterial({color:'#bd7d43'});
+const batGripMaterial=new THREE.MeshLambertMaterial({color:'#47372e'});
+const batGripAccentMaterial=new THREE.MeshLambertMaterial({color:'#ece4d0'});
 const mergedMaterial=new THREE.MeshLambertMaterial({vertexColors:true,flatShading:true});
 
 function mergedGeometry(parts){
   const positions=[],normals=[],colors=[],indices=[];
-  for(const {geometry,material,position,rotationY=0} of parts){
+  for(const {geometry,material,position,rotationX=0,rotationY=0} of parts){
     const transform=new THREE.Matrix4().makeRotationY(rotationY);
+    if(rotationX)transform.multiply(new THREE.Matrix4().makeRotationX(rotationX));
     transform.setPosition(...position);
     const positionAttribute=geometry.getAttribute('position');
     const normalAttribute=geometry.getAttribute('normal');
@@ -64,9 +73,30 @@ function createFlipFlops(key,rotation){
   return group;
 }
 
+function createBaseballBat(key,rotation){
+  const parts=[
+    {geometry:batBarrelGeometry,material:batMaterial,position:[0,.064,0],rotationX:Math.PI/2},
+    {geometry:batHandleGeometry,material:batMaterial,position:[0,.064,-.34],rotationX:Math.PI/2},
+    {geometry:batGripGeometry,material:batGripMaterial,position:[0,.064,-.375],rotationX:Math.PI/2},
+    {geometry:batBandGeometry,material:batGripAccentMaterial,position:[0,.064,-.26],rotationX:Math.PI/2},
+    {geometry:batKnobGeometry,material:batMaterial,position:[0,.064,-.46],rotationX:Math.PI/2},
+  ];
+  const group=new THREE.Group();
+  group.rotation.y=rotation*Math.PI/2;
+  group.userData.decorationKey=key;
+  const model=new THREE.Mesh(mergedGeometry(parts),mergedMaterial);
+  model.castShadow=true;
+  model.receiveShadow=true;
+  model.userData.decorationKey=key;
+  group.add(model);
+  return group;
+}
+
 export function createDecorationModel({type,rotation=0},key){
   if(!DECORATIONS.some(item=>item.id===type))throw new TypeError(`不支援的道具模型：${type}`);
-  return createFlipFlops(key,rotation);
+  if(type==='flip-flops')return createFlipFlops(key,rotation);
+  if(type==='baseball-bat')return createBaseballBat(key,rotation);
+  throw new TypeError(`不支援的道具模型：${type}`);
 }
 
 export function disposeDecorationModel(model){
