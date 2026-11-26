@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#14372f">
+  <title>島嶼方塊｜效能量測</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <script type="importmap">
+    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js"}}
+  </script>
+  <script type="module" src="./game/benchmark.js"></script>
+  <style>
+    :root{font-family:system-ui,"Noto Sans TC",sans-serif;color:#f2f0e2;background:#14372f;font-synthesis:none;text-rendering:optimizeLegibility}
+    *{box-sizing:border-box}body{margin:0;min-width:320px;min-height:100vh;padding:28px clamp(16px,4vw,48px);background:radial-gradient(ellipse at top right,#31614b 0,transparent 42%),#14372f}
+    main{width:min(980px,100%);margin:0 auto}.eyebrow{color:#c2dfb8;font:500 .72rem ui-monospace,monospace;letter-spacing:.14em}h1{margin:.6rem 0;font-size:clamp(1.8rem,5vw,2.8rem)}p{color:#cfdbca;line-height:1.75}.notice{padding:14px 16px;border:1px solid #f0c16e55;border-radius:12px;background:#f0c16e12;color:#f8e4bc;font-size:.9rem}
+    .controls{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:20px 0}.primary,.secondary{min-block-size:48px;padding:10px 16px;border:0;border-radius:10px;font:inherit;font-size:.9rem;font-weight:700;cursor:pointer}.primary{background:#f2c16f;color:#21382e}.secondary{border:1px solid #ffffff38;background:#ffffff10;color:#f2f0e2}.primary[aria-disabled="true"],.secondary:disabled{cursor:wait;opacity:.55}.stress{display:flex;align-items:center;gap:8px;min-block-size:48px;padding:4px 8px;color:#e4ebdf;font-size:.88rem}.stress input{width:18px;height:18px;accent-color:#f2c16f}.status{min-height:1.7em;color:#d5e5cd;font-size:.88rem}
+    .panel{margin-top:18px;padding:18px;border:1px solid #ffffff22;border-radius:16px;background:#102e28cc;box-shadow:0 12px 35px #081e1a33}.panel h2{margin:0 0 12px;font-size:1.05rem}.canvas-wrap{overflow:hidden;border-radius:10px;background:#1c4a44}canvas{display:block;width:100%;height:auto;aspect-ratio:16/9}.table-wrap{overflow:auto;max-inline-size:100%;border-radius:8px}.table-wrap:focus-visible{outline:3px solid #f2c16f;outline-offset:3px}table{width:100%;min-inline-size:650px;border-collapse:collapse;font-size:.86rem}caption{padding:8px;text-align:left;color:#cfdbca}th,td{padding:10px 8px;border-bottom:1px solid #ffffff20;text-align:left;white-space:nowrap}th{color:#bbd4b8;font-size:.72rem;font-weight:600}td:last-child,th:last-child{text-align:right}.muted{color:#aabfac;font-size:.78rem}.environment{overflow-wrap:anywhere;color:#bacdbc;font:.76rem/1.7 ui-monospace,monospace}.results-actions{display:flex;justify-content:flex-end;margin-top:12px}.report-text{overflow-wrap:anywhere;white-space:pre-wrap;color:#cfdbca;font:.76rem/1.6 ui-monospace,monospace}
+    @media(max-width:560px){body{padding-top:20px}.panel{padding:14px}th,td{padding:9px 6px}.controls{align-items:flex-start}.stress{width:100%}}
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">DEVELOPMENT TOOL</p>
+    <h1>世界效能量測</h1>
+    <p>量測初始世界生成、單一區塊網格重建和瀏覽器畫面更新，並加上合成方塊測試。先在桌面執行，再用同一版本的手機瀏覽器重跑，方便比較。區塊指標只量網格重建，不含放置或挖除的資料更新時間。</p>
+    <p class="notice">這個頁面只在記憶體中建立測試世界，不會讀取、修改或清除遊戲的本機存檔。20,000 方塊壓力測試預設關閉；低記憶體裝置請先不要啟用。大型測試選項會在開始時讀取，量測中途切換只影響下次執行。</p>
+    <div class="controls">
+      <button class="primary" id="run-benchmark" type="button">開始量測</button>
+      <label class="stress" for="include-stress"><input id="include-stress" type="checkbox">加入 20,000 方塊大型測試</label>
+    </div>
+    <p class="status" id="status" role="status">尚未開始</p>
+    <section class="panel" aria-labelledby="preview-title">
+      <h2 id="preview-title">基準世界預覽</h2>
+      <div class="canvas-wrap"><canvas id="benchmark-canvas" width="640" height="360" aria-label="效能測試用台灣方塊世界預覽"></canvas></div>
+    </section>
+    <section class="panel" aria-labelledby="result-title">
+      <h2 id="result-title">量測結果</h2>
+      <div class="table-wrap" tabindex="0" role="region" aria-labelledby="result-title"><table>
+        <caption>各測試情境的世界規模與量測耗時</caption>
+        <thead><tr><th scope="col">情境</th><th scope="col">方塊數</th><th scope="col">耗時</th><th scope="col">補充</th></tr></thead>
+        <tbody id="results"><tr><td colspan="4" class="muted">執行後顯示結果</td></tr></tbody>
+      </table></div>
+      <div class="results-actions"><button class="secondary" id="copy-report" type="button" disabled>複製量測報告</button></div>
+      <details><summary>顯示可手動複製的文字報告</summary><pre class="report-text" id="report-text">執行量測後產生。</pre></details>
+    </section>
+    <section class="panel" aria-labelledby="environment-title">
+      <h2 id="environment-title">裝置資訊</h2>
+      <p class="environment" id="environment">執行量測後顯示瀏覽器、視窗尺寸、像素比例及可用記憶體資訊。</p>
+    </section>
+    <p class="muted">量測會受背景分頁、電源模式、溫度、瀏覽器和其他開啟頁面影響。重跑時請記錄相同場景與裝置；這些數字是觀察值，不是發布效能保證。</p>
+  </main>
+</body>
+</html>
