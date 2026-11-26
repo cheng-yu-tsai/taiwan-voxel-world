@@ -179,7 +179,10 @@ export class GameUI {
 
   updatePlayer(position,island){
     $('#coordinates').textContent=`座標 ${Math.floor(position.x)}, ${Math.floor(position.z)}`;
-    if(island)$('#location-name').textContent=island.shortName;
+    if(island){
+      $('#location-name').textContent=island.shortName;
+      $('#world-location').textContent=island.shortName;
+    }
   }
 
   setTarget(block){
