@@ -19,6 +19,26 @@ export function summarizeFrameIntervals(intervals) {
   };
 }
 
+export function summarizeVisibilityStateEntries(entries, currentState, supported = true) {
+  if (!Array.isArray(entries) || typeof supported !== 'boolean'
+    || !['visible', 'hidden'].includes(currentState)) {
+    throw new TypeError('Visibility history must include valid entries, support, and current state');
+  }
+  if (entries.some(entry => !entry || !['visible', 'hidden'].includes(entry.name)
+    || !Number.isFinite(entry.startTime) || entry.startTime < 0)) {
+    throw new TypeError('Visibility entries must include a valid state and start time');
+  }
+
+  return {
+    supported,
+    initialState: supported ? entries[0]?.name ?? null : null,
+    transitions: supported
+      ? entries.map(({ name, startTime }) => ({ state: name, startTimeMs: Number(startTime.toFixed(1)) }))
+      : [],
+    currentState,
+  };
+}
+
 export function summarizeLongAnimationFrames(entries, supported = true) {
   if (!Array.isArray(entries) || typeof supported !== 'boolean') {
     throw new TypeError('Long animation frame data must be an array with a support flag');

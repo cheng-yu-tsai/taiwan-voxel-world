@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { summarizeFrameIntervals, summarizeLongAnimationFrames } from '../site/game/frame-timing.js';
+import {
+  summarizeFrameIntervals,
+  summarizeLongAnimationFrames,
+  summarizeVisibilityStateEntries,
+} from '../site/game/frame-timing.js';
 
 test('returns null timing values when no frames were sampled', () => {
   assert.deepEqual(summarizeFrameIntervals([]), {
@@ -37,6 +41,40 @@ test('rejects non-array, negative, and non-finite frame intervals', () => {
   assert.throws(() => summarizeFrameIntervals([-0.1]), TypeError);
   assert.throws(() => summarizeFrameIntervals([NaN]), TypeError);
   assert.throws(() => summarizeFrameIntervals([Infinity]), TypeError);
+});
+
+test('retains initial background and visible transitions from supported visibility history', () => {
+  const entries = [
+    { name: 'hidden', startTime: 0 },
+    { name: 'visible', startTime: 214.36 },
+  ];
+  const original = structuredClone(entries);
+  assert.deepEqual(summarizeVisibilityStateEntries(entries, 'visible'), {
+    supported: true,
+    initialState: 'hidden',
+    transitions: [
+      { state: 'hidden', startTimeMs: 0 },
+      { state: 'visible', startTimeMs: 214.4 },
+    ],
+    currentState: 'visible',
+  });
+  assert.deepEqual(entries, original);
+});
+
+test('leaves initial visibility unknown when history is unavailable', () => {
+  assert.deepEqual(summarizeVisibilityStateEntries([], 'visible', false), {
+    supported: false,
+    initialState: null,
+    transitions: [],
+    currentState: 'visible',
+  });
+});
+
+test('rejects malformed visibility history', () => {
+  assert.throws(() => summarizeVisibilityStateEntries(null, 'visible'), TypeError);
+  assert.throws(() => summarizeVisibilityStateEntries([{ name: 'prerender', startTime: 0 }], 'visible'), TypeError);
+  assert.throws(() => summarizeVisibilityStateEntries([{ name: 'hidden', startTime: -1 }], 'visible'), TypeError);
+  assert.throws(() => summarizeVisibilityStateEntries([], 'occluded'), TypeError);
 });
 
 test('distinguishes unsupported long-frame timing from a supported empty sample', () => {

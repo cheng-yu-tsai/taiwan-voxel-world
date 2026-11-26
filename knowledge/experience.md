@@ -1,5 +1,13 @@
 # 開發經驗
 
+## 2026-11-26｜分開量測 WebGL 呼叫時間與影格排程
+
+- **做法：** 在每個 requestAnimationFrame 回呼中分開統計 WebGL `renderer.render()` 的 JavaScript 呼叫耗時與 rAF 時間間隔；另外讀取支援時的 `VisibilityStateEntry` 歷程，記錄初始狀態、狀態切換和目前狀態，並以標準 WebGL `RENDERER` 字串補充裝置資訊。
+- **原因：** 一次約 1 秒的 rAF 間隔不一定來自遊戲程式或 GPU；只看平均 FPS 或呼叫開始時間，無法判斷繪製呼叫是否真的耗時，也容易漏掉頁面最初在背景載入後再切到前景的情況。
+- **可重用範圍：** 短時 Three.js／WebGL 瀏覽器基準或互動渲染診斷；將畫面更新排程、主執行緒 render() 呼叫耗時和初始可見度分開記錄，可避免把 rAF 延遲直接當成渲染器瓶頸。
+- **注意事項：** `renderer.render()` 計時只涵蓋 JavaScript 呼叫，不代表 GPU 完成呈現；`VisibilityStateEntry` 尚非所有瀏覽器都有，支援不足時要把初始狀態標成未知，而不是用執行時的 `document.visibilityState` 假裝初始值。WebGL renderer 字串也可能被瀏覽器遮蔽。
+- **驗證：** 新增初始隱藏後顯示、歷程不可用和錯誤資料測試；目標 10 項計時測試通過，`frame-timing.js` 行／函式覆蓋率 100%。Chrome 158 本機量測顯示初始狀態 visible、renderer `WebKit WebGL`、render() P50 1.4 ms／P95 與最大 46.1 ms，但 rAF P95 仍約 1,009 ms；本次結果顯示 render() 呼叫本身不足以解釋間隔，尚未定位瀏覽器排程或呈現階段原因（見 [技術路線](tech-roadmap.md)）。
+
 ## 2026-11-26｜讓效能基準共用實際新世界生成流程
 
 - **做法：** 把島嶼地形、離島地標、環島小路和台中街景的固定生成順序抽成 `generateDefaultWorldContent(world)`；新世界和不讀寫存檔的效能頁都呼叫同一流程，再各自建立欄位索引與區塊網格。

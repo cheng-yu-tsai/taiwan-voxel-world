@@ -3,7 +3,11 @@ import { WORLD_CONFIG } from './config.js';
 import { VoxelWorld } from './world.js';
 import { generateDefaultWorldContent } from './world-generation.js';
 import { syntheticBlockEntries } from './benchmark-data.js';
-import { summarizeFrameIntervals, summarizeLongAnimationFrames } from './frame-timing.js';
+import {
+  summarizeFrameIntervals,
+  summarizeLongAnimationFrames,
+  summarizeVisibilityStateEntries,
+} from './frame-timing.js';
 
 const $ = selector => document.querySelector(selector);
 const runButton = $('#run-benchmark');
@@ -48,13 +52,34 @@ function finishLongAnimationFrameObservation(collection) {
   return summarizeLongAnimationFrames(collection.entries, collection.supported);
 }
 
+function pageVisibilityDiagnostics() {
+  let entries = [];
+  try {
+    entries = performance.getEntriesByType('visibility-state');
+  } catch {
+    // VisibilityStateEntry is optional; preserve unknown initial state when unavailable.
+  }
+  const supported = typeof globalThis.VisibilityStateEntry === 'function' || entries.length > 0;
+  return summarizeVisibilityStateEntries(entries, document.visibilityState, supported);
+}
+
+function webglRendererName(renderer) {
+  try {
+    const context = renderer?.getContext();
+    const name = context?.getParameter(context.RENDERER);
+    return typeof name === 'string' ? name : null;
+  } catch {
+    return null;
+  }
+}
+
 function describeLongAnimationFrames(summary) {
   if (!summary.supported) return '無法取得長影格腳本歸因';
   const frameDetail = summary.frameCount
     ? `長影格 ${summary.frameCount} 次，最長 ${summary.maxDurationMs.toFixed(1)} ms`
     : '長影格 0 次';
   const scriptDetail = summary.topScripts.slice(0, 3)
-    .map(script => `${script.sourceURL} ${script.totalDurationMs.toFixed(1)} ms`)
+    .map(script => `${script.sourceURL || '來源 URL 不可用'} ${script.totalDurationMs.toFixed(1)} ms`)
     .join('、');
   return scriptDetail ? `${frameDetail}；腳本累計 ${scriptDetail}` : frameDetail;
 }
@@ -115,6 +140,7 @@ function renderFor(renderer, scene, camera, durationMs = 3000) {
     let frames = 0;
     let previousFrameTime = null;
     const frameIntervals = [];
+    const renderCallDurations = [];
     const longFrameCollection = observeLongAnimationFrames();
     const start = performance.now();
     let animationFrame = 0;
@@ -125,6 +151,7 @@ function renderFor(renderer, scene, camera, durationMs = 3000) {
         ...result,
         frames,
         ...summarizeFrameIntervals(frameIntervals),
+        renderCallTiming: summarizeFrameIntervals(renderCallDurations),
         longAnimationFrames: finishLongAnimationFrameObservation(longFrameCollection),
       });
     };
@@ -143,7 +170,9 @@ function renderFor(renderer, scene, camera, durationMs = 3000) {
       if (previousFrameTime !== null) frameIntervals.push(now - previousFrameTime);
       previousFrameTime = now;
       try {
+        const renderStart = performance.now();
         renderer.render(scene, camera);
+        renderCallDurations.push(performance.now() - renderStart);
       } catch (error) {
         fail(error);
         return;
@@ -250,12 +279,13 @@ async function runBenchmark() {
         ms: fpsResult.ms,
         detail: fpsResult.suspended
           ? '頁面切至背景，量測略過'
-          : `${fpsResult.fps.toFixed(1)} FPS 平均；rAF 間隔中位數 ${fpsResult.medianMs.toFixed(1)} ms、P95 ${fpsResult.p95Ms.toFixed(1)} ms、最長 ${fpsResult.maxMs.toFixed(1)} ms；${describeLongAnimationFrames(fpsResult.longAnimationFrames)}`,
+          : `${fpsResult.fps.toFixed(1)} FPS 平均；rAF 間隔中位數 ${fpsResult.medianMs.toFixed(1)} ms、P95 ${fpsResult.p95Ms.toFixed(1)} ms、最長 ${fpsResult.maxMs.toFixed(1)} ms；render() CPU P50 ${fpsResult.renderCallTiming.medianMs.toFixed(1)} ms、P95 ${fpsResult.renderCallTiming.p95Ms.toFixed(1)} ms、最長 ${fpsResult.renderCallTiming.maxMs.toFixed(1)} ms；${describeLongAnimationFrames(fpsResult.longAnimationFrames)}`,
         fps: fpsResult.suspended ? null : Number(fpsResult.fps.toFixed(1)),
         frameCount: fpsResult.suspended ? null : fpsResult.frames,
         frameIntervalMedianMs: fpsResult.suspended ? null : fpsResult.medianMs,
         frameIntervalP95Ms: fpsResult.suspended ? null : fpsResult.p95Ms,
         longestFrameIntervalMs: fpsResult.suspended ? null : fpsResult.maxMs,
+        renderCallTiming: fpsResult.suspended ? null : fpsResult.renderCallTiming,
         longAnimationFrames: fpsResult.suspended ? null : fpsResult.longAnimationFrames,
       };
       addResult(fpsEntry);
@@ -280,7 +310,9 @@ async function runBenchmark() {
       jsHeapUsedMB: memory ? Number((memory / 1024 / 1024).toFixed(1)) : null,
       jsHeapSource: memory ? 'performance.memory（若瀏覽器支援）' : null,
       webgl: Boolean(renderer),
+      webglRenderer: webglRendererName(renderer),
       pageVisibility: document.visibilityState,
+      visibilityHistory: pageVisibilityDiagnostics(),
       fps: fpsResult?.fps === null ? null : fpsResult ? Number(fpsResult.fps.toFixed(1)) : null,
       longAnimationFrameDiagnosticsAvailable: fpsResult?.longAnimationFrames?.supported ?? null,
     };
