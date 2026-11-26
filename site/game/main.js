@@ -15,7 +15,7 @@ renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1.12;
 renderer.shadowMap.enabled=true;
-renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.shadowMap.type=THREE.PCFShadowMap;
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.6));
 renderer.setSize(window.innerWidth,window.innerHeight,false);
 
@@ -128,11 +128,13 @@ document.addEventListener('mousedown',event=>{
   if(event.button===0||event.button===2){event.preventDefault();interact(event.button);}
 });
 
-const clock=new THREE.Clock();
+const timer=new THREE.Timer();
+timer.connect(document);
 let hudClock=0;
-function animate(){
+function animate(timestamp){
   requestAnimationFrame(animate);
-  const dt=clock.getDelta();
+  timer.update(timestamp);
+  const dt=timer.getDelta();
   player?.update(dt);
   if(player){
     const target=world.raycast((()=>{raycaster.setFromCamera(screenCenter,camera);return raycaster;})());
