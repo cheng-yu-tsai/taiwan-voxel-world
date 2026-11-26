@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { ISLANDS, WORLD_CONFIG } from './config.js';
 import { VoxelWorld } from './world.js';
 import { syntheticBlockEntries } from './benchmark-data.js';
+import { summarizeFrameIntervals } from './frame-timing.js';
 
 const $ = selector => document.querySelector(selector);
 const runButton = $('#run-benchmark');
@@ -70,12 +71,14 @@ function resetToBase(world, baseBlocks) {
 function renderFor(renderer, scene, camera, durationMs = 3000) {
   return new Promise((resolve, reject) => {
     let frames = 0;
+    let previousFrameTime = null;
+    const frameIntervals = [];
     const start = performance.now();
     let animationFrame = 0;
     const finish = result => {
       cancelAnimationFrame(animationFrame);
       document.removeEventListener('visibilitychange', onVisibilityChange);
-      resolve(result);
+      resolve({ ...result, frames, ...summarizeFrameIntervals(frameIntervals) });
     };
     const fail = error => {
       cancelAnimationFrame(animationFrame);
@@ -88,6 +91,8 @@ function renderFor(renderer, scene, camera, durationMs = 3000) {
     document.addEventListener('visibilitychange', onVisibilityChange);
     function frame(now) {
       if (document.visibilityState !== 'visible') return finish({ ms: now - start, fps: null, suspended: true });
+      if (previousFrameTime !== null) frameIntervals.push(now - previousFrameTime);
+      previousFrameTime = now;
       try {
         renderer.render(scene, camera);
       } catch (error) {
@@ -195,7 +200,14 @@ async function runBenchmark() {
         name: '初始世界畫面更新（3 秒）',
         blocks: world.getBlockCount(),
         ms: fpsResult.ms,
-        detail: fpsResult.suspended ? '頁面切至背景，量測略過' : `${fpsResult.fps.toFixed(1)} FPS`,
+        detail: fpsResult.suspended
+          ? '頁面切至背景，量測略過'
+          : `${fpsResult.fps.toFixed(1)} FPS 平均；rAF 間隔中位數 ${fpsResult.medianMs.toFixed(1)} ms、P95 ${fpsResult.p95Ms.toFixed(1)} ms、最長 ${fpsResult.maxMs.toFixed(1)} ms`,
+        fps: fpsResult.suspended ? null : Number(fpsResult.fps.toFixed(1)),
+        frameCount: fpsResult.suspended ? null : fpsResult.frames,
+        frameIntervalMedianMs: fpsResult.suspended ? null : fpsResult.medianMs,
+        frameIntervalP95Ms: fpsResult.suspended ? null : fpsResult.p95Ms,
+        longestFrameIntervalMs: fpsResult.suspended ? null : fpsResult.maxMs,
       };
       addResult(fpsEntry);
       entries.push(fpsEntry);
