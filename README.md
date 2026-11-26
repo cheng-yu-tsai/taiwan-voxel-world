@@ -42,7 +42,8 @@
 地形與區塊索引的 Node 測試可直接執行：
 
 ```sh
-node --experimental-test-coverage --test tests/*.test.mjs
+npm ci
+npm test
 ```
 
 ## GitHub Pages

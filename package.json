@@ -1,0 +1,11 @@
+{
+  "name": "taiwan-voxel-world",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-test-coverage --test-coverage-lines=80 --test-coverage-branches=80 --test-coverage-functions=80 --test tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "three": "0.187.0"
+  }
+}
