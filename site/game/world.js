@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { BLOCKS, CONFIG_VERSION, ISLANDS, WORLD_CONFIG } from './config.js';
+import { terrainHeight } from './terrain.js';
 
 const faces = [
   { n: [1,0,0], corners: [[1,0,0],[1,1,0],[1,1,1],[1,0,1]] },
@@ -82,17 +83,7 @@ export class VoxelWorld {
   }
 
   terrainHeight(island,x,z){
-    if(island.id==='main'){
-      const ridge=0.75+Math.sin(z*.21)*.82+Math.sin(z*.07)*.55;
-      const distance=Math.abs(x-ridge);
-      const range=Math.exp(-(distance*distance)/19);
-      const foothill=Math.exp(-(distance*distance)/73);
-      const variation=Math.sin(x*1.7+z*.62)*.55+Math.cos(z*.83-x*.38)*.4;
-      return Math.max(1,Math.min(15,1+Math.round(10.5*range+2.2*foothill+variation)));
-    }
-    if(island.id==='penghu') return 2+Math.round(Math.max(0,Math.sin(x*1.3+z)*.8));
-    if(island.id==='matsu') return 2+Math.round(Math.max(0,Math.sin(z*1.2-x)*.8));
-    return 2+Math.round(Math.max(0,Math.sin(x*.8+z*.35)*.85));
+    return terrainHeight(island,x,z);
   }
 
   seedTaiwanStreet(){

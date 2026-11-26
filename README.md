@@ -17,7 +17,8 @@
 ## 保持好修改
 
 - `site/game/config.js`：島嶼位置、地形種類、方塊材質、操作速度與儲存版本。
-- `site/game/world.js`：方塊資料、島嶼地形生成、街景範例、分塊渲染與存檔。
+- `site/game/terrain.js`：台灣本島與各離島的確定性地形高度輪廓。
+- `site/game/world.js`：方塊資料、街景範例、分塊渲染與存檔。
 - `site/game/player.js`：第一人稱移動、視角與跳躍。
 - `site/game/ui.js`：物品欄、交通地圖、設定和操作提示。
 - `site/game/main.js`：場景燈光、渲染器，以及各模組的組合。
