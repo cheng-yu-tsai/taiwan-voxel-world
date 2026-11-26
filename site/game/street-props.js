@@ -9,15 +9,29 @@ const scooterShape = [
   [0, 3, 2, 'wood'],
 ];
 
-export function scooterBlockEntries(originX, baseY, originZ) {
+const crosswalkShape = [
+  [0, 0, 0, 'concrete'], [1, 0, 0, 'concrete'],
+  [0, 0, 2, 'concrete'], [1, 0, 2, 'concrete'],
+  [0, 0, 4, 'concrete'], [1, 0, 4, 'concrete'],
+];
+
+function translatedPropEntries(shape, originX, baseY, originZ) {
   if (![originX, baseY, originZ].every(Number.isSafeInteger)) {
-    throw new TypeError('Scooter origin must use safe integer block coordinates');
+    throw new TypeError('Street prop origin must use safe integer block coordinates');
   }
-  return scooterShape.map(([dx, dy, dz, type]) => {
+  return shape.map(([dx, dy, dz, type]) => {
     const x = originX + dx, y = baseY + dy, z = originZ + dz;
     if (![x, y, z].every(Number.isSafeInteger)) {
-      throw new RangeError('Scooter position exceeds safe integer block coordinates');
+      throw new RangeError('Street prop position exceeds safe integer block coordinates');
     }
     return [`${x},${y},${z}`, type];
   });
+}
+
+export function scooterBlockEntries(originX, baseY, originZ) {
+  return translatedPropEntries(scooterShape, originX, baseY, originZ);
+}
+
+export function crosswalkBlockEntries(originX, baseY, originZ) {
+  return translatedPropEntries(crosswalkShape, originX, baseY, originZ);
 }

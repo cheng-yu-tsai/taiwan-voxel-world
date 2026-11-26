@@ -5,7 +5,7 @@ import { ChunkBlockIndex } from './chunk-index.js';
 import { validateWorldSave, MAX_WORLD_SAVE_BYTES } from './world-save.js';
 import { islandAtPosition, isIslandPoint } from './island-geometry.js';
 import { BlockEditHistory } from './block-edit-history.js';
-import { scooterBlockEntries } from './street-props.js';
+import { crosswalkBlockEntries, scooterBlockEntries } from './street-props.js';
 
 const faces = [
   { n: [1,0,0], corners: [[1,0,0],[1,1,0],[1,1,1],[1,0,1]] },
@@ -92,6 +92,7 @@ export class VoxelWorld {
     }
     this.buildShop(-7,-2,2,3,'brick','roof','sign');
     this.buildShop(-3,2,2,3,'wood','roof','sign');
+    for(const [key,type] of crosswalkBlockEntries(-5,1,-3)) this.blocks.set(key,type);
     for(const [key,type] of scooterBlockEntries(-3,1,-1)) this.blocks.set(key,type);
     // A small coast-side row of wave breakers makes the Taiwan shoreline legible.
     for(let z=-2;z<=2;z++){
