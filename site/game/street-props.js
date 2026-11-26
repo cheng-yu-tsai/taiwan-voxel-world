@@ -13,8 +13,11 @@ export function scooterBlockEntries(originX, baseY, originZ) {
   if (![originX, baseY, originZ].every(Number.isSafeInteger)) {
     throw new TypeError('Scooter origin must use safe integer block coordinates');
   }
-  return scooterShape.map(([dx, dy, dz, type]) => [
-    `${originX + dx},${baseY + dy},${originZ + dz}`,
-    type,
-  ]);
+  return scooterShape.map(([dx, dy, dz, type]) => {
+    const x = originX + dx, y = baseY + dy, z = originZ + dz;
+    if (![x, y, z].every(Number.isSafeInteger)) {
+      throw new RangeError('Scooter position exceeds safe integer block coordinates');
+    }
+    return [`${x},${y},${z}`, type];
+  });
 }

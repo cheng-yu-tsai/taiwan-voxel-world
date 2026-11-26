@@ -23,4 +23,6 @@ test('moves the complete scooter by the requested integer block origin', () => {
 test('rejects fractional and unsafe origin coordinates', () => {
   assert.throws(() => scooterBlockEntries(1.5, 0, 0), TypeError);
   assert.throws(() => scooterBlockEntries(0, 0, Number.MAX_SAFE_INTEGER + 1), TypeError);
+  assert.throws(() => scooterBlockEntries(0, Number.MAX_SAFE_INTEGER, 0), RangeError);
+  assert.throws(() => scooterBlockEntries(0, 0, Number.MAX_SAFE_INTEGER), RangeError);
 });
