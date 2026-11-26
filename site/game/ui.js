@@ -1,4 +1,5 @@
 import { BLOCKS, ISLANDS } from './config.js';
+import { hotkeyForIndex } from './hotbar.js';
 
 const $ = selector => document.querySelector(selector);
 
@@ -67,11 +68,12 @@ export class GameUI {
 
   renderHotbar(){
     this.hotbar.replaceChildren();
-    BLOCKS.slice(0,6).forEach((block,index)=>{
+    BLOCKS.forEach((block,index)=>{
+      const hotkey=hotkeyForIndex(index);
       const button=document.createElement('button');
       button.className='hotbar-slot';button.type='button';button.dataset.block=block.id;
-      button.setAttribute('aria-label',`${index+1} ${block.name}`);button.title=`${index+1} ${block.name}`;
-      button.innerHTML=`<span class="slot-number">${index+1}</span><i class="slot-swatch" style="background:${block.swatch}"></i><span class="slot-name">${block.name}</span>`;
+      button.setAttribute('aria-label',`${hotkey} ${block.name}`);button.title=`${hotkey} ${block.name}`;
+      button.innerHTML=`<span class="slot-number">${hotkey}</span><i class="slot-swatch" style="background:${block.swatch}"></i><span class="slot-name">${block.name}</span>`;
       button.addEventListener('click',()=>this.selectBlock(block.id));
       this.hotbar.append(button);
     });
@@ -84,6 +86,7 @@ export class GameUI {
       const selected=slot.dataset.block===blockId;
       slot.classList.toggle('selected',selected);slot.setAttribute('aria-pressed',String(selected));
     });
+    this.hotbar.querySelector('.hotbar-slot.selected')?.scrollIntoView({block:'nearest',inline:'nearest'});
     const block=BLOCKS.find(item=>item.id===blockId);
     if(block)this.hooks.selectBlock?.(block);
   }

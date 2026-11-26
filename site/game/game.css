@@ -23,3 +23,10 @@
   .action-hint{max-width:calc(100vw - 24px);font-size:.62rem}
 }
 @media(pointer:fine){.touch-hint{display:none}}
+
+.hotbar{max-width:calc(100vw - 24px);overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:thin;scrollbar-color:#dfbc77 #10362f}
+.hotbar-slot{flex:0 0 57px;scroll-snap-align:start}
+.hotbar::-webkit-scrollbar{height:4px}
+.hotbar::-webkit-scrollbar-thumb{border-radius:99px;background:#dfbc77}
+@media(max-width:800px){.hotbar-slot{flex-basis:47px}}
+@media(max-width:560px){.hotbar-slot{flex-basis:43px}}

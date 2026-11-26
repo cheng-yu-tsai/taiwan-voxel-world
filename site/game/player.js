@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { CONTROL_DEFAULTS, WORLD_CONFIG } from './config.js';
+import { BLOCKS, CONTROL_DEFAULTS, WORLD_CONFIG } from './config.js';
+import { blockForHotkey } from './hotbar.js';
 
 export class FirstPersonPlayer {
   constructor(camera,canvas,world,ui){
@@ -60,8 +61,8 @@ export class FirstPersonPlayer {
     if(event.code==='KeyH'){
       this.ui.openModal('help-modal');return;
     }
-    const slot=Number(event.key);
-    if(slot>=1&&slot<=6){this.ui.selectBlock(['grass','stone','brick','road','wood','wave'][slot-1]);return;}
+    const block=blockForHotkey(event.key,BLOCKS);
+    if(block){this.ui.selectBlock(block.id);return;}
     if(['KeyW','KeyA','KeyS','KeyD','Space','ShiftLeft','ShiftRight'].includes(event.code)){
       event.preventDefault();this.keys.add(event.code);
     }
