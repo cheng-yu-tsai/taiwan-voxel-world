@@ -11,6 +11,7 @@ export class GameUI {
     this.activeTransport='boat';
     this.selectedBlock=BLOCKS[0].id;
     this.modalIds=['welcome','travel-modal','settings-modal','help-modal'];
+    this.confirmation=null;
     this.hotbar=$('#hotbar');
     this.islandList=$('#island-list');
     this.renderHotbar();
@@ -34,6 +35,15 @@ export class GameUI {
     document.querySelectorAll('.modal-backdrop').forEach(backdrop=>{
       backdrop.addEventListener('mousedown',event=>{if(event.target===backdrop&&backdrop.id!=='welcome')this.closeModal(backdrop.id);});
     });
+    $('#confirm-cancel').addEventListener('click',()=>this.finishConfirmation(false));
+    $('#confirm-accept').addEventListener('click',()=>this.finishConfirmation(true));
+    $('#confirm-modal').addEventListener('keydown',event=>{
+      if(event.key!=='Tab')return;
+      const buttons=$('#confirm-modal').querySelectorAll('button:not([disabled])');
+      const first=buttons[0],last=buttons[buttons.length-1];
+      if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+      else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+    });
     document.querySelectorAll('[data-transport]').forEach(button=>button.addEventListener('click',()=>this.setTransport(button.dataset.transport)));
     $('#sensitivity').addEventListener('input',event=>{
       const value=Number(event.target.value);
@@ -44,10 +54,16 @@ export class GameUI {
       this.hooks.setQuality?.(event.target.value);
       localStorage.setItem('island-blocks-quality',event.target.value);
     });
-    $('#reset-world').addEventListener('click',()=>{
-      if(window.confirm('重設會清除這台裝置上已放置與挖除的方塊，並回到初始台灣世界。確定重設嗎？')){
+    $('#reset-world').addEventListener('click',async()=>{
+      if(await this.requestConfirmation({
+        title:'重設這個世界？',
+        message:'重設會清除這台裝置上已放置與挖除的方塊，並回到初始台灣世界。',
+        confirmLabel:'重設世界',
+        danger:true,
+      })){
         this.hooks.reset?.();
         this.closeModal('settings-modal');
+        $('#settings-button').focus();
         this.showToast('世界已回到初始樣子');
       }
     });
@@ -59,9 +75,16 @@ export class GameUI {
       if(!file)return;
       try{
         const save=await readWorldSaveFile(file);
-        if(!window.confirm(`即將以備份中的 ${save.blocks.length.toLocaleString('zh-TW')} 個方塊完整取代目前世界。建議先匯出備份。確定匯入嗎？`))return;
+        $('#import-world').focus();
+        if(!await this.requestConfirmation({
+          title:'匯入備份並取代目前世界？',
+          message:`備份包含 ${save.blocks.length.toLocaleString('zh-TW')} 個方塊，匯入後會完整取代目前世界。建議先匯出備份。`,
+          confirmLabel:'匯入並取代',
+          danger:true,
+        }))return;
         this.hooks.importWorld?.(save);
         this.closeModal('settings-modal');
+        $('#settings-button').focus();
         this.showToast('世界存檔已匯入');
       }catch(error){
         console.warn('Could not import voxel world:',error);
@@ -161,13 +184,40 @@ export class GameUI {
     this.modalIds.forEach(modalId=>document.getElementById(modalId).classList.toggle('hidden',modalId!==id));
   }
 
-  closeModal(id){document.getElementById(id)?.classList.add('hidden');}
+  requestConfirmation({title,message,confirmLabel='確定',danger=false}){
+    if(this.confirmation)this.finishConfirmation(false);
+    $('#confirm-title').textContent=title;
+    $('#confirm-message').textContent=message;
+    const accept=$('#confirm-accept');
+    accept.textContent=confirmLabel;
+    accept.classList.toggle('danger-confirm',danger);
+    return new Promise(resolve=>{
+      this.confirmation={resolve,previousFocus:document.activeElement};
+      $('#confirm-modal').classList.remove('hidden');
+      $('#confirm-cancel').focus();
+    });
+  }
+
+  finishConfirmation(confirmed){
+    if(!this.confirmation)return;
+    const {resolve,previousFocus}=this.confirmation;
+    this.confirmation=null;
+    $('#confirm-modal').classList.add('hidden');
+    resolve(confirmed);
+    if(previousFocus?.isConnected)previousFocus.focus();
+  }
+
+  closeModal(id){
+    if(id==='confirm-modal'){this.finishConfirmation(false);return;}
+    document.getElementById(id)?.classList.add('hidden');
+  }
   closeTopModal(){
+    if(this.confirmation){this.finishConfirmation(false);return true;}
     const open=this.modalIds.find(id=>id!=='welcome'&&!document.getElementById(id).classList.contains('hidden'));
     if(open){this.closeModal(open);return true;}return false;
   }
   showWelcome(){this.openModal('welcome');}
-  isModalOpen(){return this.modalIds.some(id=>!document.getElementById(id).classList.contains('hidden'));}
+  isModalOpen(){return Boolean(this.confirmation)||this.modalIds.some(id=>!document.getElementById(id).classList.contains('hidden'));}
 
   updateWorld({count,saved,message,canUndo,canRedo}={}){
     if(count!==undefined)$('#block-count').textContent=Number(count).toLocaleString('zh-TW');

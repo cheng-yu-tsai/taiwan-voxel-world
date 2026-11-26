@@ -35,3 +35,10 @@
 .hotbar::-webkit-scrollbar-thumb{border-radius:99px;background:#dfbc77}
 @media(max-width:800px){.hotbar-slot{flex-basis:47px}}
 @media(max-width:560px){.hotbar-slot{flex-basis:43px}}
+
+.confirm-card{width:min(430px,100%)}
+.confirm-card .dialog-copy{line-height:1.8}
+.confirm-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}
+.confirm-actions .secondary-button{min-height:44px}
+.confirm-actions .danger-confirm{background:#a85142;color:#fff1e8}
+.confirm-actions .danger-confirm:hover{background:#bd6150}
