@@ -166,4 +166,12 @@
 - **原因：** 桌面初測最長 rAF 間隔達 108.2 ms，但 rAF 間隔不能指出是遊戲腳本、繪製或其他因素；腳本歸因可在支援瀏覽器協助定位可重現的長影格。
 - **可重用範圍：** 瀏覽器動畫、遊戲或互動頁面的短時效能診斷；只在量測工作階段安裝觀察器，摘要腳本耗時而不長期記錄完整 entry，適合留在開發工具中。
 - **注意事項：** Long Animation Frames API 僅部分瀏覽器支援；沒有 entry 不代表沒有卡頓，也不涵蓋 GPU 完成時間。完整來源 URL 僅留在量測頁／報告中，未加入傳送或持久化流程；手機仍需以實際同場景量測。
-- **驗證：** 純摘要函式測試涵蓋支援／不支援、空集合、多影格、腳本排序、輸入不變與無效資料；全套 47 項 Node 測試、ES module 語法檢查及 `git diff --check` 通過，新計時模組函式覆蓋率 100%、分支覆蓋率 97.22%。此新增功能尚待提交、部署及線上瀏覽器確認。
+- **驗證：** 純摘要函式測試涵蓋支援／不支援、空集合、多影格、腳本排序、輸入不變與無效資料；全套 47 項 Node 測試、ES module 語法檢查及 `git diff --check` 通過，新計時模組函式覆蓋率 100%、分支覆蓋率 97.22%。部署後在 Chrome 158 跑完三秒量測，偵測到 3 個 LoAF、最長 116.8 ms，腳本總耗時 198.5 ms，其中量測頁 `benchmark.js` 58.0 ms；環境欄確認診斷可用，console 無錯誤或警告。這是量測頁的歸因，尚不能代表遊戲主頁瓶頸，也未量手機。
+
+## 2026-11-26｜重試 GitHub Pages artifact 部署
+
+- **做法：** `upload static site` 顯示成功但 `deploy-pages` 找不到 `github-pages` artifact 時，先讀 GitHub Actions check-run 註解確認錯誤，再重跑同一 workflow；第二次部署成功，沒有更改 workflow 或重複推送程式修改。
+- **原因：** 此錯誤發生在 Actions artifact／Pages 部署交接，不是程式碼建置錯誤；平台註解建議稍後重試。快速改 workflow 容易掩蓋暫時的 Actions 狀態問題。
+- **可重用範圍：** GitHub Pages Actions 顯示 artifact upload 成功、但 deploy step 回報找不到指定 artifact 時；先檢查該次 run 的 annotation 和 attempt，再重跑同一次部署。
+- **注意事項：** 先確認部署失敗沒有指出檔案或設定錯誤；重跑只適用於 artifact 暫缺或平台服務問題。讀取工作日誌可能需要 repository admin 權限，公開 check-run annotations 在本案已足以指出原因。
+- **驗證：** `95ed34c` 首次部署缺少 `github-pages` artifact；run attempt 2 成功，GitHub Pages 公開 `benchmark.html` 與 `game/benchmark.js` 回傳 200，內容包含長影格診斷。
