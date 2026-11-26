@@ -3,6 +3,7 @@ import { BLOCKS, CONFIG_VERSION, ISLANDS, WORLD_CONFIG } from './config.js';
 import { terrainHeight } from './terrain.js';
 import { ChunkBlockIndex, isValidBlockKey } from './chunk-index.js';
 import { validateWorldSave, MAX_WORLD_SAVE_BYTES } from './world-save.js';
+import { islandAtPosition, isIslandPoint } from './island-geometry.js';
 
 const faces = [
   { n: [1,0,0], corners: [[1,0,0],[1,1,0],[1,1,1],[1,0,1]] },
@@ -15,16 +16,6 @@ const faces = [
 const shade = [0.76, 0.76, 1, 0.62, 0.88, 0.68];
 const keyOf = (x,y,z) => `${x},${y},${z}`;
 const parseKey = key => key.split(',').map(Number);
-
-function pointInPolygon(x,z,polygon){
-  let inside = false;
-  for(let i=0,j=polygon.length-1;i<polygon.length;j=i++){
-    const [xi,zi]=polygon[i], [xj,zj]=polygon[j];
-    const crosses = ((zi>z)!==(zj>z)) && (x<(xj-xi)*(z-zi)/(zj-zi+Number.EPSILON)+xi);
-    if(crosses) inside=!inside;
-  }
-  return inside;
-}
 
 export class VoxelWorld {
   constructor(scene,onChange=()=>{}){
@@ -80,10 +71,10 @@ export class VoxelWorld {
   }
 
   isInside(island,x,z,shape=island.shape){
-    if(island.type==='polygon') return pointInPolygon(x,z,island.shape);
-    if(island.type==='cluster') return ((x-shape.x)/shape.rx)**2+((z-shape.z)/shape.rz)**2<=1;
-    return ((x-shape.x)/shape.rx)**2+((z-shape.z)/shape.rz)**2<=1;
+    return isIslandPoint(island,x,z,island.type==='cluster'?shape:undefined);
   }
+
+  getIslandAt(x,z){return islandAtPosition(ISLANDS,x,z);}
 
   terrainHeight(island,x,z){
     return terrainHeight(island,x,z);

@@ -91,6 +91,8 @@ export class FirstPersonPlayer {
       const dz=(fz*forward+rz*strafe)/magnitude*this.speed*multiplier*dt;
       this.tryMove(dx,dz);
     }
+    const island=this.world.getIslandAt(this.position.x,this.position.z);
+    if(island)this.currentIsland=island;
     const currentGround=this.world.getGroundHeight(this.position.x,this.position.z);
     const floor=currentGround===null?WORLD_CONFIG.seaLevel+.34:currentGround+1;
     if(this.keys.has('Space')&&this.onGround){this.velocityY=this.jump;this.onGround=false;this.keys.delete('Space');}
