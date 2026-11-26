@@ -2,6 +2,7 @@ export const MAX_WORLD_DECORATIONS = 50_000;
 export const DECORATIONS = [
   { id: 'flip-flops', name: '藍白拖', swatch: '#5b9cba' },
   { id: 'baseball-bat', name: '球棒', swatch: '#bb8250' },
+  { id: 'toy-pistol', name: '玩具手槍', swatch: '#41b9cc' },
 ];
 
 const knownDecorations = new Set(DECORATIONS.map(item => item.id));

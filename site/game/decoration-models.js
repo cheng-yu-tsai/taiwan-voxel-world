@@ -10,12 +10,22 @@ const batHandleGeometry=new THREE.CylinderGeometry(.024,.021,.18,8);
 const batGripGeometry=new THREE.CylinderGeometry(.026,.024,.105,8);
 const batBandGeometry=new THREE.CylinderGeometry(.032,.032,.012,8);
 const batKnobGeometry=new THREE.CylinderGeometry(.032,.025,.03,8);
+const pistolBodyGeometry=new THREE.BoxGeometry(.33,.13,.28);
+const pistolSlideGeometry=new THREE.BoxGeometry(.25,.045,.27);
+const pistolBarrelGeometry=new THREE.CylinderGeometry(.047,.047,.09,8);
+const pistolGripGeometry=new THREE.BoxGeometry(.13,.22,.13);
+const pistolGripPanelGeometry=new THREE.BoxGeometry(.138,.11,.018);
 const soleBottomMaterial=new THREE.MeshLambertMaterial({color:'#245e7d'});
 const soleTopMaterial=new THREE.MeshLambertMaterial({color:'#5b9cba'});
 const strapMaterial=new THREE.MeshLambertMaterial({color:'#f5f0dc'});
 const batMaterial=new THREE.MeshLambertMaterial({color:'#bd7d43'});
 const batGripMaterial=new THREE.MeshLambertMaterial({color:'#47372e'});
 const batGripAccentMaterial=new THREE.MeshLambertMaterial({color:'#ece4d0'});
+const pistolBodyMaterial=new THREE.MeshLambertMaterial({color:'#28a9bd'});
+const pistolSlideMaterial=new THREE.MeshLambertMaterial({color:'#f3cf58'});
+const pistolMuzzleMaterial=new THREE.MeshLambertMaterial({color:'#fa7e42'});
+const pistolGripMaterial=new THREE.MeshLambertMaterial({color:'#e45f65'});
+const pistolGripPanelMaterial=new THREE.MeshLambertMaterial({color:'#ffe8a0'});
 const mergedMaterial=new THREE.MeshLambertMaterial({vertexColors:true,flatShading:true});
 
 function mergedGeometry(parts){
@@ -92,10 +102,30 @@ function createBaseballBat(key,rotation){
   return group;
 }
 
+function createToyPistol(key,rotation){
+  const parts=[
+    {geometry:pistolBodyGeometry,material:pistolBodyMaterial,position:[0,.12,.055]},
+    {geometry:pistolSlideGeometry,material:pistolSlideMaterial,position:[0,.207,.06]},
+    {geometry:pistolBarrelGeometry,material:pistolMuzzleMaterial,position:[0,.145,.245],rotationX:Math.PI/2},
+    {geometry:pistolGripGeometry,material:pistolGripMaterial,position:[0,.11,-.035],rotationX:-.16},
+    {geometry:pistolGripPanelGeometry,material:pistolGripPanelMaterial,position:[0,.11,-.102],rotationX:-.16},
+  ];
+  const group=new THREE.Group();
+  group.rotation.y=rotation*Math.PI/2;
+  group.userData.decorationKey=key;
+  const model=new THREE.Mesh(mergedGeometry(parts),mergedMaterial);
+  model.castShadow=true;
+  model.receiveShadow=true;
+  model.userData.decorationKey=key;
+  group.add(model);
+  return group;
+}
+
 export function createDecorationModel({type,rotation=0},key){
   if(!DECORATIONS.some(item=>item.id===type))throw new TypeError(`不支援的道具模型：${type}`);
   if(type==='flip-flops')return createFlipFlops(key,rotation);
   if(type==='baseball-bat')return createBaseballBat(key,rotation);
+  if(type==='toy-pistol')return createToyPistol(key,rotation);
   throw new TypeError(`不支援的道具模型：${type}`);
 }
 
