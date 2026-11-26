@@ -6,6 +6,7 @@ import { validateWorldSave, MAX_WORLD_SAVE_BYTES } from './world-save.js';
 import { islandAtPosition, isIslandPoint } from './island-geometry.js';
 import { BlockEditHistory } from './block-edit-history.js';
 import { crosswalkBlockEntries, scooterBlockEntries, streetlampBlockEntries } from './street-props.js';
+import { greenIslandTrailEntries } from './island-trails.js';
 
 const faces = [
   { n: [1,0,0], corners: [[1,0,0],[1,1,0],[1,1,1],[1,0,1]] },
@@ -43,6 +44,7 @@ export class VoxelWorld {
     this.blocks.clear();
     this.editHistory.clear();
     for(const island of ISLANDS) this.generateIsland(island);
+    this.seedGreenIslandTrail();
     this.seedTaiwanStreet();
     this.restoreSave();
     this.reindexColumns();
@@ -99,6 +101,16 @@ export class VoxelWorld {
     for(let z=-2;z<=2;z++){
       const x=-8;
       this.blocks.set(keyOf(x,1,z),'wave');
+    }
+  }
+
+  seedGreenIslandTrail(){
+    const island=this.islandById.get('green');
+    for(const [key,type] of greenIslandTrailEntries()){
+      const [x,y,z]=parseKey(key);
+      const surfaceY=terrainHeight(island,x+.5,z+.5)-1;
+      for(let above=y+1;above<=surfaceY;above++) this.blocks.delete(keyOf(x,above,z));
+      this.blocks.set(key,type);
     }
   }
 
