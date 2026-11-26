@@ -55,6 +55,14 @@ const ui=new GameUI({
   setSensitivity:value=>player?.setSensitivity(value),
   getSensitivity:()=>player?.sensitivity??CONTROL_DEFAULTS.sensitivity,
   setQuality:value=>{quality=value;setQuality();},
+  exportWorld:()=>world?.exportSave(),
+  importWorld:save=>{
+    world.importSave(save);
+    player.teleport(ISLANDS[0]);
+    player.position.set(WORLD_CONFIG.spawn.x,world.getSpawnPoint('main').y,WORLD_CONFIG.spawn.z);
+    player.syncCamera();lastLocation=ISLANDS[0].shortName;
+    ui.updatePlayer(player.position,ISLANDS[0]);
+  },
   touchKey:(key,down)=>player?.setTouchKey(key,down),
   touchAction:action=>{
     if(action==='mine')interact(0);

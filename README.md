@@ -5,6 +5,7 @@
 **目前遊玩：** https://cheng-yu-tsai.github.io/taiwan-voxel-world/
 
 - [遊戲願景與路線圖](knowledge/plan.md)
+- [待決策事項與建議](knowledge/decision.md)
 - [遊戲入口](site/index.html)
 
 ## 目前原型
@@ -13,6 +14,7 @@
 - 以物品欄選擇台灣街景方塊，在台中海岸街角自由建造。
 - 從交通地圖搭船或搭飛機前往本島與離島。
 - 方塊修改會存在瀏覽器的 localStorage；設定可調整滑鼠靈敏度與畫面品質。
+- 可在設定中匯出 JSON 世界備份，或選擇備份匯入；匯入前會確認並完整取代目前世界。
 
 ## 保持好修改
 
@@ -29,7 +31,7 @@
 地形與區塊索引的 Node 測試可直接執行：
 
 ```sh
-node --experimental-test-coverage --test tests/terrain.test.mjs tests/chunk-index.test.mjs
+node --experimental-test-coverage --test tests/*.test.mjs
 ```
 
 ## GitHub Pages

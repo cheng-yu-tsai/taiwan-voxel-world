@@ -1,5 +1,6 @@
 import { BLOCKS, ISLANDS } from './config.js';
 import { hotkeyForIndex } from './hotbar.js';
+import { readWorldSaveFile } from './world-save.js';
 
 const $ = selector => document.querySelector(selector);
 
@@ -48,6 +49,25 @@ export class GameUI {
         this.showToast('世界已回到初始樣子');
       }
     });
+    $('#export-world').addEventListener('click',()=>this.downloadWorldSave());
+    const importInput=$('#import-world-file');
+    $('#import-world').addEventListener('click',()=>importInput.click());
+    importInput.addEventListener('change',async()=>{
+      const file=importInput.files?.[0];
+      if(!file)return;
+      try{
+        const save=await readWorldSaveFile(file);
+        if(!window.confirm(`即將以備份中的 ${save.blocks.length.toLocaleString('zh-TW')} 個方塊完整取代目前世界。建議先匯出備份。確定匯入嗎？`))return;
+        this.hooks.importWorld?.(save);
+        this.closeModal('settings-modal');
+        this.showToast('世界存檔已匯入');
+      }catch(error){
+        console.warn('Could not import voxel world:',error);
+        this.showToast(error instanceof SyntaxError?'存檔不是有效的 JSON':error.message||'匯入存檔失敗');
+      }finally{
+        importInput.value='';
+      }
+    });
     document.querySelectorAll('.touch-controls [data-key]').forEach(button=>{
       const press=event=>{event.preventDefault();button.setPointerCapture?.(event.pointerId);this.hooks.touchKey?.(button.dataset.key,true);};
       const release=event=>{event.preventDefault();this.hooks.touchKey?.(button.dataset.key,false);};
@@ -78,6 +98,25 @@ export class GameUI {
       this.hotbar.append(button);
     });
     this.selectBlock(this.selectedBlock);
+  }
+
+  downloadWorldSave(){
+    try{
+      const save=this.hooks.exportWorld?.();
+      if(!save)throw new Error('目前無法匯出世界');
+      const json=JSON.stringify(save);
+      if(new TextEncoder().encode(json).byteLength>32*1024*1024)throw new RangeError('存檔超過 32 MB 上限');
+      const blob=new Blob([json],{type:'application/json'});
+      const url=URL.createObjectURL(blob);
+      const link=document.createElement('a');
+      link.href=url;link.download=`island-blocks-${new Date().toISOString().slice(0,10)}.json`;
+      document.body.append(link);link.click();link.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+      this.showToast('世界存檔已匯出');
+    }catch(error){
+      console.warn('Could not export voxel world:',error);
+      this.showToast(error.message||'匯出存檔失敗');
+    }
   }
 
   selectBlock(blockId){

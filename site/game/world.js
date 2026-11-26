@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { BLOCKS, CONFIG_VERSION, ISLANDS, WORLD_CONFIG } from './config.js';
 import { terrainHeight } from './terrain.js';
 import { ChunkBlockIndex, isValidBlockKey } from './chunk-index.js';
+import { validateWorldSave, MAX_WORLD_SAVE_BYTES } from './world-save.js';
 
 const faces = [
   { n: [1,0,0], corners: [[1,0,0],[1,1,0],[1,1,1],[1,0,1]] },
@@ -149,6 +150,19 @@ export class VoxelWorld {
 
   getBlockCount(){return this.blocks.size;}
   getBlock(key){return this.blocks.get(key);}
+  exportSave(){return validateWorldSave({version:CONFIG_VERSION,blocks:[...this.blocks]});}
+  importSave(save){
+    const normalized=validateWorldSave(save);
+    const raw=JSON.stringify(normalized);
+    if(new TextEncoder().encode(raw).byteLength>MAX_WORLD_SAVE_BYTES)throw new RangeError('存檔超過 32 MB 上限');
+    try{localStorage.setItem(WORLD_CONFIG.saveKey,raw);}
+    catch(error){throw new Error('瀏覽器儲存空間不足，匯入未套用；目前世界仍保留', {cause:error});}
+    clearTimeout(this.saveTimer);
+    this.blocks=new Map(normalized.blocks);
+    this.reindexColumns();
+    this.rebuildAll();
+    this.onChange({count:this.blocks.size,saved:true});
+  }
   setBlock(x,y,z,type){
     const coords=[Math.floor(x),Math.floor(y),Math.floor(z)];
     const key=keyOf(...coords);
