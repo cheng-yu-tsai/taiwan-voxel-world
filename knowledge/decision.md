@@ -43,5 +43,5 @@
 - **中階手機效能驗證待執行：** 目前只有桌面瀏覽器基準，無法從桌面數值推論行動裝置效能。
 - **建議：** 取得一台實際中階手機後，用既有量測頁記錄裝置型號、瀏覽器、視窗方向與相同場景，再依結果決定是否需要效能工作；未取得實測前不調整區塊大小或視距。
 - **桌面低 FPS 已在 Chrome 頁面可見狀態重現，作業系統前景待確認：** 2026-11-26 在 Chrome 158、Windows x64、1536×730、DPR 1.25、8 GB 記憶體回報值及 WebGL 可用的桌面 Chrome 分頁連跑兩次；兩次初始／結束 `document.visibilityState` 都是 visible，卻皆為 1.0 FPS、3 個影格，rAF P95 1,015.7／1,016.2 ms。`render()` CPU P95 為 107.4／38.1 ms；Long Animation Frames 各 1 次、最長 853.9／892.2 ms，無可歸因腳本。測試世界各 5,464 格；完整耗時列於[技術路線效能記錄](tech-roadmap.md)。
-- **解讀與限制：** 這確認低影格率在一般 Chrome 158 分頁且頁面 visibility 為 visible 時仍可重現，但 `visible` 不等於已證明 Chrome 視窗在作業系統前景。Windows Chrome 視窗控制無法確認目前 URL；嘗試透過分頁 CDP 啟動效能追蹤時呼叫逾時並使 debugger 脫離，沒有取得 trace 或 GPU 歸因。先前應用程式內分頁和 Chrome 連線分頁也有相近現象，但均未證明根因。
+- **解讀與限制：** 這確認低影格率在一般 Chrome 158 分頁且頁面 visibility 為 visible 時仍可重現，但 `visible` 不等於已證明 Chrome 視窗在作業系統前景。Windows Chrome 視窗控制無法確認目前 URL；嘗試透過分頁 CDP 啟動效能追蹤時呼叫逾時並使 debugger 脫離，沒有取得 trace 或 GPU 歸因。後續一次桌面 Chrome 控制嘗試又被 Computer Use 安全檢查中止，因工具無法驗證當前分頁 URL，未對 Chrome 執行操作。先前應用程式內分頁和 Chrome 連線分頁也有相近現象，但均未證明根因。
 - **推薦與進度：** 下一步在可明確確認作業系統前景的 Chrome 視窗以 DevTools Performance 擷取短 trace，檢查長影格、GPU 提交及瀏覽器排程；若頁面被降頻或沒有來源歸因，再保留報告並請使用者從可見 Chrome 視窗手動開始錄製。未取得可歸因證據前，不調整區塊大小、視距或據此宣稱裝置效能；中階手機仍須用實機另測。

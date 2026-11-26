@@ -120,6 +120,7 @@
 - [x] 新增專案 README 與 Pages 設定說明。
 - [x] 建立公開 GitHub repository 並推送專案。
 - [x] 設定 Pages 使用 GitHub Actions，首次部署成功；網站可於 https://cheng-yu-tsai.github.io/taiwan-voxel-world/ 瀏覽。
+- [x] 確認最新 `main` 提交 `dbc1607` 的 Actions 測試及 Pages 部署皆成功（Run #60；查核經驗見[開發經驗](experience.md)）。
 
 ## 目前原型操作
 

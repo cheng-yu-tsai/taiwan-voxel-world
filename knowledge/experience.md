@@ -296,3 +296,11 @@
 - **可重用範圍：** 瀏覽器遊戲效能異常的固定場景複測；保留相同瀏覽器版本、視窗尺寸、DPR、方塊數與壓力選項，並同時記錄 `document.visibilityState`、rAF 間隔、render 呼叫耗時和長影格歸因，可確認現象是否重現而不把相關性當成原因。
 - **注意事項：** `visibility=visible` 表示頁面未被瀏覽器標記為隱藏，不能單獨證明 Chrome 作業系統視窗位於前景。兩次報告仍未指出長影格來源；嘗試啟動 CDP 效能追蹤時控制連線逾時／脫離，因此沒有追蹤檔或 GPU 呈現歸因。未定位之前不要因單次 `render()` 呼叫時間或這些量測值直接調整區塊大小、視距或宣稱裝置效能。
 - **驗證：** 兩次量測報告均完整，Chrome 158、DPR 1.25、WebGL、頁面可見度與 5,464 格場景一致；結果保存在[技術路線效能記錄](tech-roadmap.md)與[待決策事項](decision.md)。尚未完成作業系統層級前景確認，也未取得中階手機量測。
+
+## 2026-11-26｜用 GitHub Actions 頁面核實最新部署
+
+- **做法：** 依提交短 SHA 在 repository 的 Actions runs 頁面核對最新 `main` workflow；`dbc1607` 對應 Run #60，頁面顯示 Deploy to GitHub Pages 已完成且成功。
+- **原因：** 未驗證最新推送是否通過檢查與部署前，不能只憑 `git push` 成功就宣稱網站已更新；此次匿名 API 查詢回覆 rate limit exceeded。
+- **可重用範圍：** GitHub 公開專案的部署狀態確認；API 限流時可用 repository 的 Actions runs 頁面比對精確 commit SHA 和 workflow 結果，避免把較舊 run 當成最新發布。
+- **注意事項：** 本次只確認該 workflow 顯示成功，沒有以瀏覽器重新載入公開網站檢查快取後的素材內容；若需核對前端實際版本，應再查看公開頁面載入資源的 commit 對應內容。
+- **驗證：** GitHub Actions runs 頁面顯示 `dbc1607` 的 Run #60 completed successfully；查核前本機 `main` 工作樹乾淨且與 `origin/main` 同步。嘗試轉往桌面 Chrome 擷取效能 trace 時，Computer Use 安全檢查因無法驗證目前分頁網址而中止，未操作 Chrome，亦未取得 trace。
