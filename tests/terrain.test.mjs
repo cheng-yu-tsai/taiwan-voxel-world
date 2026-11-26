@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ISLANDS } from './config.js';
-import { terrainHeight } from './terrain.js';
+import { ISLANDS } from '../site/game/config.js';
+import { terrainHeight } from '../site/game/terrain.js';
 
 const island = id => ISLANDS.find(item => item.id === id);
 const height = (id, x, z) => terrainHeight(island(id), x, z);

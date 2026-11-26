@@ -18,12 +18,19 @@
 
 - `site/game/config.js`：島嶼位置、地形種類、方塊材質、操作速度與儲存版本。
 - `site/game/terrain.js`：台灣本島與各離島的確定性地形高度輪廓。
+- `site/game/chunk-index.js`：維護方塊到渲染區塊的索引，讓局部編輯只掃描受影響區塊。
 - `site/game/world.js`：方塊資料、街景範例、分塊渲染與存檔。
 - `site/game/player.js`：第一人稱移動、視角與跳躍。
 - `site/game/ui.js`：物品欄、交通地圖、設定和操作提示。
 - `site/game/main.js`：場景燈光、渲染器，以及各模組的組合。
 
 遊戲用 Three.js ES modules，版本固定於 `site/index.html` 的 import map；網站不需要建置步驟。
+
+地形與區塊索引的 Node 測試可直接執行：
+
+```sh
+node --experimental-test-coverage --test tests/terrain.test.mjs tests/chunk-index.test.mjs
+```
 
 ## GitHub Pages
 

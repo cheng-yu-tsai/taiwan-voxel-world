@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { BLOCKS, CONFIG_VERSION, ISLANDS, WORLD_CONFIG } from './config.js';
 import { terrainHeight } from './terrain.js';
+import { ChunkBlockIndex, isValidBlockKey } from './chunk-index.js';
 
 const faces = [
   { n: [1,0,0], corners: [[1,0,0],[1,1,0],[1,1,1],[1,0,1]] },
@@ -30,6 +31,7 @@ export class VoxelWorld {
     this.onChange=onChange;
     this.blocks=new Map();
     this.chunks=new Map();
+    this.chunkIndex=new ChunkBlockIndex(WORLD_CONFIG.chunkSize);
     this.topHeights=new Map();
     this.colorCache=new Map();
     this.saveTimer=0;
@@ -124,7 +126,7 @@ export class VoxelWorld {
       if(!raw) return;
       const save=JSON.parse(raw);
       if(save.version!==CONFIG_VERSION||!Array.isArray(save.blocks)) return;
-      this.blocks=new Map(save.blocks.filter(entry=>Array.isArray(entry)&&entry.length===2&&typeof entry[0]==='string'&&typeof entry[1]==='string'));
+      this.blocks=new Map(save.blocks.filter(entry=>Array.isArray(entry)&&entry.length===2&&isValidBlockKey(entry[0])&&typeof entry[1]==='string'));
     }catch(error){
       console.warn('Could not restore saved voxel world:',error);
       this.onChange({message:'讀取存檔失敗，已建立新世界'});
@@ -133,9 +135,11 @@ export class VoxelWorld {
 
   reindexColumns(){
     this.topHeights.clear();
+    this.chunkIndex.clear();
     for(const key of this.blocks.keys()){
       const [x,y,z]=parseKey(key), column=`${x},${z}`;
       if(!this.topHeights.has(column)||this.topHeights.get(column)<y) this.topHeights.set(column,y);
+      this.chunkIndex.add(key);
     }
   }
 
@@ -145,13 +149,12 @@ export class VoxelWorld {
 
   getBlockCount(){return this.blocks.size;}
   getBlock(key){return this.blocks.get(key);}
-  getChunkKey(x,z){return `${Math.floor(x/WORLD_CONFIG.chunkSize)},${Math.floor(z/WORLD_CONFIG.chunkSize)}`;}
-
   setBlock(x,y,z,type){
     const coords=[Math.floor(x),Math.floor(y),Math.floor(z)];
     const key=keyOf(...coords);
     if(this.blocks.has(key)) return false;
     this.blocks.set(key,type);
+    this.chunkIndex.add(key);
     const column=`${coords[0]},${coords[2]}`;
     if(!this.topHeights.has(column)||coords[1]>this.topHeights.get(column))this.topHeights.set(column,coords[1]);
     this.rebuildAround(...coords);
@@ -163,6 +166,7 @@ export class VoxelWorld {
     if(!this.blocks.has(key)) return null;
     const [x,y,z]=parseKey(key), type=this.blocks.get(key);
     this.blocks.delete(key);
+    this.chunkIndex.remove(key);
     const column=`${x},${z}`;
     if(this.topHeights.get(column)===y){
       let next=null;
@@ -186,24 +190,20 @@ export class VoxelWorld {
   rebuildAll(){
     for(const chunk of this.chunks.values()){this.scene.remove(chunk);chunk.geometry.dispose();}
     this.chunks.clear();
-    const keys=new Set();
-    for(const key of this.blocks.keys()){
-      const [x,,z]=parseKey(key);keys.add(this.getChunkKey(x,z));
+    for(const chunkKey of this.chunkIndex.chunkKeys()){
+      const [cx,cz]=chunkKey.split(',').map(Number);this.rebuildChunk(cx,cz);
     }
-    for(const chunkKey of keys){const [cx,cz]=chunkKey.split(',').map(Number);this.rebuildChunk(cx,cz);}
   }
 
   rebuildChunk(cx,cz){
     const chunkKey=`${cx},${cz}`, previous=this.chunks.get(chunkKey);
     if(previous){this.scene.remove(previous);previous.geometry.dispose();this.chunks.delete(chunkKey);}
-    const xMin=cx*WORLD_CONFIG.chunkSize, xMax=xMin+WORLD_CONFIG.chunkSize;
-    const zMin=cz*WORLD_CONFIG.chunkSize, zMax=zMin+WORLD_CONFIG.chunkSize;
     const positions=[],normals=[],colors=[],indices=[],faceBlocks=[];
-    let blockCount=0;
-    for(const [key,type] of this.blocks){
+    const blockKeys=this.chunkIndex.get(chunkKey);
+    if(!blockKeys?.size) return;
+    for(const key of blockKeys){
       const [x,y,z]=parseKey(key);
-      if(x<xMin||x>=xMax||z<zMin||z>=zMax) continue;
-      blockCount++;
+      const type=this.blocks.get(key);
       const palette=BLOCKS.find(block=>block.id===type)||BLOCKS[1];
       const faceColors=this.getFaceColors(type,palette);
       for(let f=0;f<faces.length;f++){
@@ -219,7 +219,6 @@ export class VoxelWorld {
         faceBlocks.push(key);
       }
     }
-    if(!blockCount) return;
     const geometry=new THREE.BufferGeometry();
     geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
     geometry.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));
