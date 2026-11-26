@@ -10,6 +10,7 @@ import {
   matsuStoneTowerEntries,
   orchidIslandCoastalRockEntries,
   penghuBasaltColumnEntries,
+  taiwanMountainLookoutEntries,
 } from '../site/game/island-landmarks.js';
 
 const penghu = ISLANDS.find(island => island.id === 'penghu');
@@ -157,4 +158,32 @@ test('generates deterministic Orchid Island coastal rocks above land and clear o
     assert.equal(levels[0], baseY);
     assert.deepEqual(levels, Array.from({ length: levels.length }, (_, index) => baseY + index));
   }
+});
+
+test('creates a walkable Taiwan ridge lookout with a clear southern entrance', () => {
+  const main = ISLANDS.find(island => island.id === 'main');
+  const entries = taiwanMountainLookoutEntries();
+  const byKey = new Map(entries);
+  const heights = [];
+
+  for (let x = 0; x < 3; x++) {
+    for (let z = 11; z < 14; z++) {
+      const groundY = terrainHeight(main, x + 0.5, z + 0.5) - 1;
+      heights.push(groundY);
+      assert.equal(byKey.get(`${x},${groundY},${z}`), 'stone');
+      assert.ok(isIslandPoint(main, x + 0.5, z + 0.5));
+      assert.notEqual(`${x},${z}`, `${Math.floor(main.spawn.x)},${Math.floor(main.spawn.z)}`);
+    }
+  }
+
+  assert.equal(new Set(entries.map(([key]) => key)).size, entries.length);
+  assert.equal(Math.min(...heights), Math.max(...heights), 'the stone deck should remain level');
+  assert.ok(isIslandPoint(main, 1.5, 10.5), 'the approach should remain on the mainland');
+  assert.ok(Math.abs(terrainHeight(main, 1.5, 10.5) - 1 - heights[0]) <= 1,
+    'the southern approach should be within one step of the deck');
+  assert.equal(entries.filter(([, type]) => type === 'stone').length, 9);
+  assert.equal(entries.filter(([, type]) => type === 'wood').length, 5);
+  assert.equal(entries.filter(([, type]) => type === 'sign').length, 1);
+  assert.equal(byKey.get('1,13,11'), undefined, 'the southern center should stay open as the entrance');
+  assert.equal(byKey.get('1,14,13'), 'sign', 'the sign should sit above the rear-center rail');
 });

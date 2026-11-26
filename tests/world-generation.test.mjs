@@ -7,6 +7,7 @@ test('generates every configured island before its local landmarks and street co
   const calls = [];
   const world = Object.fromEntries([
     'generateIsland',
+    'seedTaiwanMountainLookout',
     'seedPenghuLandmark',
     'seedKinmenLandmark',
     'seedMatsuLandmark',
@@ -20,6 +21,7 @@ test('generates every configured island before its local landmarks and street co
 
   assert.deepEqual(calls, [
     ...ISLANDS.map(island => ['generateIsland', island.id]),
+    ['seedTaiwanMountainLookout', null],
     ['seedPenghuLandmark', null],
     ['seedKinmenLandmark', null],
     ['seedMatsuLandmark', null],

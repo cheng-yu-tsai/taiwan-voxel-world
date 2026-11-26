@@ -14,6 +14,7 @@ const windLionShape = [
 ];
 const matsuColumnHeights = [3, 2];
 const coastalRockHeights = [2, 3];
+const taiwanLookout = { x: 0, z: 11, width: 3, depth: 3 };
 const islandTrailEntriesById = new Map([
   ['green', greenIslandTrailEntries],
   ['orchid', orchidIslandTrailEntries],
@@ -44,6 +45,48 @@ function ellipseCoastalRockEntries(islandId) {
     const baseY = terrainHeight(island, x + 0.5, z + 0.5);
     for (let offset = 0; offset < height; offset++) entries.push([`${x},${baseY + offset},${z}`, 'stone']);
   });
+
+  return entries;
+}
+
+export function taiwanMountainLookoutEntries() {
+  const island = ISLANDS.find(candidate => candidate.id === 'main');
+  if (!island || island.type !== 'polygon') throw new Error('Taiwan mainland polygon is not configured');
+
+  const spawnColumn = `${Math.floor(island.spawn.x)},${Math.floor(island.spawn.z)}`;
+  const entries = [];
+  const surfaceLevels = [];
+  for (let dx = 0; dx < taiwanLookout.width; dx++) {
+    for (let dz = 0; dz < taiwanLookout.depth; dz++) {
+      const x = taiwanLookout.x + dx, z = taiwanLookout.z + dz;
+      if (!isIslandPoint(island, x + 0.5, z + 0.5)) throw new Error('Taiwan mountain lookout falls outside the mainland');
+      if (`${x},${z}` === spawnColumn) throw new Error('Taiwan mountain lookout occupies the spawn column');
+      surfaceLevels.push(terrainHeight(island, x + 0.5, z + 0.5) - 1);
+    }
+  }
+
+  if (new Set(surfaceLevels).size !== 1) throw new Error('Taiwan mountain lookout deck must stay level');
+  const surfaceY = surfaceLevels[0];
+  const railY = surfaceY + 1;
+  for (let dx = 0; dx < taiwanLookout.width; dx++) {
+    for (let dz = 0; dz < taiwanLookout.depth; dz++) {
+      const x = taiwanLookout.x + dx, z = taiwanLookout.z + dz;
+      entries.push([`${x},${surfaceY},${z}`, 'stone']);
+    }
+  }
+
+  for (let dx = 0; dx < taiwanLookout.width; dx++) {
+    entries.push([`${taiwanLookout.x + dx},${railY},${taiwanLookout.z + taiwanLookout.depth - 1}`, 'wood']);
+  }
+  entries.push([`${taiwanLookout.x},${railY},${taiwanLookout.z + 1}`, 'wood']);
+  entries.push([`${taiwanLookout.x + taiwanLookout.width - 1},${railY},${taiwanLookout.z + 1}`, 'wood']);
+  entries.push([`${taiwanLookout.x + 1},${railY + 1},${taiwanLookout.z + taiwanLookout.depth - 1}`, 'sign']);
+
+  const approach = { x: taiwanLookout.x + 1, z: taiwanLookout.z - 1 };
+  const approachY = terrainHeight(island, approach.x + 0.5, approach.z + 0.5) - 1;
+  if (!isIslandPoint(island, approach.x + 0.5, approach.z + 0.5) || Math.abs(approachY - surfaceY) > 1) {
+    throw new Error('Taiwan mountain lookout needs an adjacent southern approach');
+  }
 
   return entries;
 }

@@ -19,6 +19,7 @@ import {
   matsuStoneTowerEntries,
   orchidIslandCoastalRockEntries,
   penghuBasaltColumnEntries,
+  taiwanMountainLookoutEntries,
 } from './island-landmarks.js';
 
 const faces = [
@@ -134,6 +135,10 @@ export class VoxelWorld {
 
   seedPenghuLandmark(){
     for(const [key,type] of penghuBasaltColumnEntries()) this.blocks.set(key,type);
+  }
+
+  seedTaiwanMountainLookout(){
+    for(const [key,type] of taiwanMountainLookoutEntries()) this.blocks.set(key,type);
   }
 
   seedKinmenLandmark(){
