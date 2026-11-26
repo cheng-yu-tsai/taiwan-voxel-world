@@ -3,7 +3,7 @@ import test from 'node:test';
 import { ISLANDS } from '../site/game/config.js';
 import { isIslandPoint } from '../site/game/island-geometry.js';
 import { terrainHeight } from '../site/game/terrain.js';
-import { penghuBasaltColumnEntries } from '../site/game/island-landmarks.js';
+import { kinmenWindLionEntries, penghuBasaltColumnEntries } from '../site/game/island-landmarks.js';
 
 const penghu = ISLANDS.find(island => island.id === 'penghu');
 
@@ -32,5 +32,29 @@ test('generates six deterministic stone columns on Penghu land above its terrain
     levels.sort((a, b) => a - b);
     assert.equal(levels[0], baseY, 'columns should start just above existing terrain');
     assert.deepEqual(levels, Array.from({ length: levels.length }, (_, i) => baseY + i));
+  }
+});
+
+test('generates a stylized Kinmen stone guardian on land away from the spawn', () => {
+  const kinmen = ISLANDS.find(island => island.id === 'kinmen');
+  const entries = kinmenWindLionEntries();
+  assert.deepEqual(kinmenWindLionEntries(), entries);
+  assert.equal(entries.length, 13);
+  assert.ok(entries.every(([, type]) => type === 'stone'));
+  assert.equal(new Set(entries.map(([key]) => key)).size, entries.length);
+
+  const columns = new Map();
+  for (const [key] of entries) {
+    const [x, y, z] = key.split(',').map(Number);
+    const columnKey = `${x},${z}`;
+    if (!columns.has(columnKey)) columns.set(columnKey, []);
+    columns.get(columnKey).push(y);
+    assert.ok(isIslandPoint(kinmen, x + 0.5, z + 0.5));
+    assert.ok(y >= terrainHeight(kinmen, x + 0.5, z + 0.5));
+  }
+  assert.equal(columns.has(`${Math.floor(kinmen.spawn.x)},${Math.floor(kinmen.spawn.z)}`), false);
+  for (const [columnKey, levels] of columns) {
+    const [x, z] = columnKey.split(',').map(Number);
+    assert.ok(levels.includes(terrainHeight(kinmen, x + 0.5, z + 0.5)));
   }
 });
