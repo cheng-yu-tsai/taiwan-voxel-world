@@ -2,11 +2,11 @@
 
 ## 2026-11-26｜在 Pages 發布前執行完整 Node 測試
 
-- **做法：** 在 GitHub Actions Pages 工作流程加入 Node.js 24 測試工作，安裝執行環境並跑 `node --experimental-test-coverage --test-coverage-lines=80 --test-coverage-branches=80 --test-coverage-functions=80 --test tests/*.test.mjs`；部署工作依賴測試工作成功。workflow 預設僅有 repository 讀取權，Pages 寫入和 OIDC 權限只授予部署工作。
+- **做法：** 在 GitHub Actions Pages 工作流程加入 Node.js 24 測試工作，安裝執行環境並跑 `node --experimental-test-coverage --test-coverage-lines=80 --test-coverage-branches=80 --test-coverage-functions=80 --test tests/*.test.mjs`；部署工作依賴測試工作成功。目標為 `main` 的 PR 也會跑測試但跳過發布，PR 和 Pages 各用獨立 concurrency group。workflow 預設僅有 repository 讀取權，Pages 寫入和 OIDC 權限只授予部署工作。
 - **原因：** 專案已有快速、無需第三方套件的純 Node 測試，但原部署工作流程只上傳靜態網站；將測試設為部署前置條件可避免把不符合地形、存檔或生成規則的提交直接發布。
 - **可重用範圍：** 使用 Node 內建測試、無建置需求的靜態網站；將快速測試設為 deploy dependency，並依最小權限分配測試與發布工作所需權限。
 - **注意事項：** 此流程只覆蓋目前 Node 測試可驗證的純模組邏輯，不等同瀏覽器端到端、手機或 WebGL 視覺測試；有新增外部相依時需再加入安裝步驟。
-- **驗證：** 本機完整 64 項 Node 測試通過，整體行／分支／函式覆蓋率為 99.16%／91.30%／100%，通過 80% 門檻；加入覆蓋率門檻後，`832c206` 的 GitHub Actions 測試工作與其後 Pages 部署工作皆成功（run `45754210007`）。
+- **驗證：** 本機完整 64 項 Node 測試通過，整體行／分支／函式覆蓋率為 99.16%／91.30%／100%，通過 80% 門檻；加入覆蓋率門檻後，`832c206` 的 GitHub Actions 測試工作與其後 Pages 部署工作皆成功（run `45754210007`）。PR 事件與獨立 concurrency 設定由本次推送後的 GitHub Actions workflow 驗證。
 
 ## 2026-11-26｜在台灣本島山脊加入可步行觀景點
 

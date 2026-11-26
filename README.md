@@ -49,7 +49,7 @@ node --experimental-test-coverage --test tests/*.test.mjs
 
 網站靜態檔案位於 `site/`。`.github/workflows/deploy.yml` 會在推送至 `main` 或手動執行時，透過 GitHub Actions 發佈到 GitHub Pages。
 
-部署前會先以 Node.js 24 執行 `tests/` 中的完整測試套件，並要求整體行、分支、函式覆蓋率至少 80%；測試或覆蓋率門檻失敗時不會執行 Pages 部署。
+推送至 `main`、手動執行或建立目標為 `main` 的 PR 時，都會以 Node.js 24 執行 `tests/` 中的完整測試套件，並要求整體行、分支、函式覆蓋率至少 80%。PR 只跑測試，不部署 Pages；推送或手動執行時，測試或覆蓋率門檻失敗也不會發布。
 
 建立 GitHub repository 後，請在 **Settings → Pages → Build and deployment** 將來源設為 **GitHub Actions**。之後推送至 `main` 即會自動部署。
 
