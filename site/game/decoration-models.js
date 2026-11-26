@@ -139,8 +139,8 @@ function addBreakwater(parts,x,z,scale){
   parts.push(
     {geometry:breakwaterCoreGeometry,material:breakwaterMaterial,position:[x,.085*scale,z],scale},
     {geometry:breakwaterArmGeometry,material:breakwaterMaterial,position:[x,.22*scale,z],scale},
-    {geometry:breakwaterArmGeometry,material:breakwaterMaterial,position:[x+.095*scale,.085*scale,z],rotationY:Math.PI/2,scale},
-    {geometry:breakwaterArmGeometry,material:breakwaterMaterial,position:[x-.095*scale,.085*scale,z],rotationY:-Math.PI/2,scale},
+    {geometry:breakwaterArmGeometry,material:breakwaterMaterial,position:[x+.095*scale,.085*scale,z],rotationZ:-Math.PI/2,scale},
+    {geometry:breakwaterArmGeometry,material:breakwaterMaterial,position:[x-.095*scale,.085*scale,z],rotationZ:Math.PI/2,scale},
     {geometry:breakwaterArmGeometry,material:breakwaterMaterial,position:[x,.085*scale,z+.095*scale],rotationX:Math.PI/2,scale},
   );
 }
@@ -151,8 +151,8 @@ function createBreakwaterDiorama(key,rotation){
   addBreakwater(parts,.29,.18,.66);
   addBreakwater(parts,0,-.31,.66);
   parts.push(
-    {geometry:mascotLegGeometry,material:mascotLegMaterial,position:[-.022,.047,-.055]},
-    {geometry:mascotLegGeometry,material:mascotLegMaterial,position:[.022,.047,-.055]},
+    {geometry:mascotLegGeometry,material:mascotLegMaterial,position:[-.022,.0475,-.055]},
+    {geometry:mascotLegGeometry,material:mascotLegMaterial,position:[.022,.0475,-.055]},
     {geometry:mascotBodyGeometry,material:mascotBodyMaterial,position:[0,.145,-.055]},
     {geometry:mascotHeadGeometry,material:mascotHeadMaterial,position:[0,.237,-.055]},
     {geometry:mascotHatGeometry,material:mascotHatMaterial,position:[0,.267,-.055]},
