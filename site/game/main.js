@@ -41,6 +41,10 @@ function makeCloud(x,y,z,scale){
 const clouds=[makeCloud(-22,20,-17,2.8),makeCloud(12,23,4,2.2),makeCloud(32,17,-8,2.5),makeCloud(-6,18,24,1.8)];
 
 let world,player,quality='high',lastLocation='',selectedBlock=BLOCKS[0];
+function editHistory(redo){
+  const changed=redo?world?.redo():world?.undo();
+  if(changed)ui.showToast(redo?'已重做上一步':'已復原上一步');
+}
 const ui=new GameUI({
   start:()=>player?.requestLock(),
   releasePointer:()=>player?.releaseLock(),
@@ -56,6 +60,8 @@ const ui=new GameUI({
   getSensitivity:()=>player?.sensitivity??CONTROL_DEFAULTS.sensitivity,
   setQuality:value=>{quality=value;setQuality();},
   exportWorld:()=>world?.exportSave(),
+  undo:()=>editHistory(false),
+  redo:()=>editHistory(true),
   importWorld:save=>{
     world.importSave(save);
     player.teleport(ISLANDS[0]);
@@ -67,6 +73,8 @@ const ui=new GameUI({
   touchAction:action=>{
     if(action==='mine')interact(0);
     if(action==='place')interact(2);
+    if(action==='undo')editHistory(false);
+    if(action==='redo')editHistory(true);
   },
   reset:()=>{
     if(!world||!player)return;

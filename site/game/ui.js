@@ -25,6 +25,8 @@ export class GameUI {
       this.hooks.start?.();
     });
     $('#map-button').addEventListener('click',()=>this.openTravel());
+    $('#undo-button').addEventListener('click',()=>this.hooks.undo?.());
+    $('#redo-button').addEventListener('click',()=>this.hooks.redo?.());
     $('#travel-button').addEventListener('click',()=>this.openTravel());
     $('#settings-button').addEventListener('click',()=>this.openSettings());
     $('#howto-button').addEventListener('click',()=>this.openModal('help-modal'));

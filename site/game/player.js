@@ -55,6 +55,13 @@ export class FirstPersonPlayer {
       return;
     }
     if(this.ui.isModalOpen())return;
+    if((event.ctrlKey||event.metaKey)&&(event.code==='KeyZ'||event.code==='KeyY')){
+      event.preventDefault();
+      const redo=event.code==='KeyY'||event.shiftKey;
+      const changed=redo?this.world.redo():this.world.undo();
+      if(changed)this.ui.showToast(redo?'已重做上一步':'已復原上一步');
+      return;
+    }
     if(event.code==='KeyM'){
       event.preventDefault();this.ui.openTravel();return;
     }

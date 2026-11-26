@@ -4,6 +4,7 @@ import { terrainHeight } from './terrain.js';
 import { ChunkBlockIndex, isValidBlockKey } from './chunk-index.js';
 import { validateWorldSave, MAX_WORLD_SAVE_BYTES } from './world-save.js';
 import { islandAtPosition, isIslandPoint } from './island-geometry.js';
+import { BlockEditHistory } from './block-edit-history.js';
 
 const faces = [
   { n: [1,0,0], corners: [[1,0,0],[1,1,0],[1,1,1],[1,0,1]] },
@@ -27,6 +28,7 @@ export class VoxelWorld {
     this.topHeights=new Map();
     this.colorCache=new Map();
     this.saveTimer=0;
+    this.editHistory=new BlockEditHistory(100);
     this.islandById=new Map(ISLANDS.map(island=>[island.id,island]));
     this.colorMaterial=new THREE.MeshLambertMaterial({vertexColors:true,flatShading:true});
     this.ocean=new THREE.Mesh(new THREE.PlaneGeometry(180,180),new THREE.MeshBasicMaterial({color:'#4faaa5'}));
@@ -38,6 +40,7 @@ export class VoxelWorld {
 
   async generate(){
     this.blocks.clear();
+    this.editHistory.clear();
     for(const island of ISLANDS) this.generateIsland(island);
     this.seedTaiwanStreet();
     this.restoreSave();
@@ -150,6 +153,7 @@ export class VoxelWorld {
     catch(error){throw new Error('瀏覽器儲存空間不足，匯入未套用；目前世界仍保留', {cause:error});}
     clearTimeout(this.saveTimer);
     this.blocks=new Map(normalized.blocks);
+    this.editHistory.clear();
     this.reindexColumns();
     this.rebuildAll();
     this.onChange({count:this.blocks.size,saved:true});
@@ -158,29 +162,50 @@ export class VoxelWorld {
     const coords=[Math.floor(x),Math.floor(y),Math.floor(z)];
     const key=keyOf(...coords);
     if(this.blocks.has(key)) return false;
-    this.blocks.set(key,type);
-    this.chunkIndex.add(key);
-    const column=`${coords[0]},${coords[2]}`;
-    if(!this.topHeights.has(column)||coords[1]>this.topHeights.get(column))this.topHeights.set(column,coords[1]);
-    this.rebuildAround(...coords);
-    this.scheduleSave();
+    this.applyBlockChange(key,type);
+    this.editHistory.record({key,before:null,after:type});
     return true;
   }
 
   removeBlock(key){
     if(!this.blocks.has(key)) return null;
     const [x,y,z]=parseKey(key), type=this.blocks.get(key);
-    this.blocks.delete(key);
-    this.chunkIndex.remove(key);
-    const column=`${x},${z}`;
-    if(this.topHeights.get(column)===y){
-      let next=null;
-      for(let check=y-1;check>=0;check--) if(this.blocks.has(keyOf(x,check,z))){next=check;break;}
-      if(next===null) this.topHeights.delete(column); else this.topHeights.set(column,next);
+    this.applyBlockChange(key,null);
+    this.editHistory.record({key,before:type,after:null});
+    return {x,y,z,type};
+  }
+
+  applyBlockChange(key,type){
+    const [x,y,z]=parseKey(key),column=`${x},${z}`;
+    if(type===null){
+      this.blocks.delete(key);
+      this.chunkIndex.remove(key);
+      if(this.topHeights.get(column)===y){
+        let next=null;
+        for(let check=y-1;check>=0;check--)if(this.blocks.has(keyOf(x,check,z))){next=check;break;}
+        if(next===null)this.topHeights.delete(column);else this.topHeights.set(column,next);
+      }
+    }else{
+      this.blocks.set(key,type);
+      this.chunkIndex.add(key);
+      if(!this.topHeights.has(column)||y>this.topHeights.get(column))this.topHeights.set(column,y);
     }
     this.rebuildAround(x,y,z);
     this.scheduleSave();
-    return {x,y,z,type};
+  }
+
+  undo(){
+    const edit=this.editHistory.undo();
+    if(!edit)return false;
+    this.applyBlockChange(edit.key,edit.before);
+    return true;
+  }
+
+  redo(){
+    const edit=this.editHistory.redo();
+    if(!edit)return false;
+    this.applyBlockChange(edit.key,edit.after);
+    return true;
   }
 
   rebuildAround(x,y,z){

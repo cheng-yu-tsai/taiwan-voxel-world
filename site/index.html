@@ -21,6 +21,8 @@
       <a class="brand" href="#" aria-label="島嶼方塊首頁"><span class="brand-mark">島</span><span>島嶼<span class="brand-light">方塊</span></span></a>
       <div class="top-actions">
         <div class="world-name"><span class="live-dot"></span><span>台中海岸・自由建造</span></div>
+        <button class="icon-button edit-history-button" id="undo-button" aria-label="復原上一步" title="復原上一步（Ctrl+Z）">↶ <span>復原</span></button>
+        <button class="icon-button edit-history-button" id="redo-button" aria-label="重做上一步" title="重做上一步（Ctrl+Y）">↷ <span>重做</span></button>
         <button class="icon-button" id="map-button" aria-label="交通地圖" title="交通地圖（M）">⌖ <span>地圖</span></button>
         <button class="icon-button" id="settings-button" aria-label="遊戲設定" title="遊戲設定">⚙</button>
       </div>
@@ -55,6 +57,8 @@
       <button data-key="Space" aria-label="跳躍">跳</button>
       <button data-action="mine" aria-label="挖掘準星指向的方塊">⛏</button>
       <button data-action="place" aria-label="在準星指向的位置放置方塊">放</button>
+      <button data-action="undo" aria-label="復原上一步">↶</button>
+      <button data-action="redo" aria-label="重做上一步">↷</button>
     </section>
 
     <div class="modal-backdrop" id="welcome" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
@@ -92,7 +96,7 @@
     </div>
 
     <div class="modal-backdrop hidden" id="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-title">
-      <div class="dialog-card help-card"><button class="close-button" data-close="help-modal" aria-label="關閉">×</button><p class="eyebrow">HOW TO PLAY</p><h2 id="help-title">幾個熟悉的按鍵</h2><div class="help-grid"><span><kbd>W A S D</kbd></span><b>移動</b><span><kbd>空白鍵</kbd></span><b>跳躍</b><span><kbd>滑鼠</kbd></span><b>轉動視角</b><span><kbd>左鍵</kbd></span><b>挖掘方塊</b><span><kbd>右鍵</kbd></span><b>放置方塊</b><span><kbd>1–9、0</kbd></span><b>選擇方塊</b><span><kbd>M</kbd></span><b>開啟交通地圖</b><span><kbd>Esc</kbd></span><b>釋放滑鼠</b><span><kbd>觸控</kbd></span><b>拖曳轉向，使用畫面按鈕移動、跳躍、挖掘和放置</b></div><p class="help-tip">選好物品欄方塊，對準方塊表面，再按右鍵或觸控「放」按鈕。</p></div>
+      <div class="dialog-card help-card"><button class="close-button" data-close="help-modal" aria-label="關閉">×</button><p class="eyebrow">HOW TO PLAY</p><h2 id="help-title">幾個熟悉的按鍵</h2><div class="help-grid"><span><kbd>W A S D</kbd></span><b>移動</b><span><kbd>空白鍵</kbd></span><b>跳躍</b><span><kbd>滑鼠</kbd></span><b>轉動視角</b><span><kbd>左鍵</kbd></span><b>挖掘方塊</b><span><kbd>右鍵</kbd></span><b>放置方塊</b><span><kbd>Ctrl+Z</kbd></span><b>復原上一步</b><span><kbd>Ctrl+Y</kbd></span><b>重做上一步</b><span><kbd>1–9、0</kbd></span><b>選擇方塊</b><span><kbd>M</kbd></span><b>開啟交通地圖</b><span><kbd>Esc</kbd></span><b>釋放滑鼠</b><span><kbd>觸控</kbd></span><b>拖曳轉向，使用畫面按鈕移動、跳躍、挖掘、放置、復原和重做</b></div><p class="help-tip">選好物品欄方塊，對準方塊表面，再按右鍵或觸控「放」按鈕。</p></div>
     </div>
 
     <div class="loading-screen" id="loading"><div class="loading-logo"><span class="brand-mark">島</span></div><b>正在生成台灣群島</b><span class="loading-track"><i></i></span><small>山脈、街角和海岸就快好了</small></div>
