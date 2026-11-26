@@ -114,6 +114,7 @@
 
 - [x] 建立靜態概念首頁（`site/index.html`）。
 - [x] 新增 GitHub Actions Pages 部署工作流程（`.github/workflows/deploy.yml`）。
+- [x] 讓 Pages 部署前先執行完整 Node 測試，只有測試成功才發布。
 - [x] 新增專案 README 與 Pages 設定說明。
 - [x] 建立公開 GitHub repository 並推送專案。
 - [x] 設定 Pages 使用 GitHub Actions，首次部署成功；網站可於 https://cheng-yu-tsai.github.io/taiwan-voxel-world/ 瀏覽。

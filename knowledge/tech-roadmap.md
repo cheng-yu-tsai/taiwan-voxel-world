@@ -8,6 +8,7 @@
 - `config.js`、`terrain.js`、`island-geometry.js`、`chunk-index.js`、`world.js`、`player.js`、`ui.js` 與 `main.js` 分工管理地形、世界和介面。
 - 方塊網格依水平區塊合併；修改方塊後只重建受影響區塊及邊界鄰區。
 - 測試以 Node 內建測試執行，適合設定、地形、幾何、索引和存檔驗證。Three.js 場景目前沒有自動瀏覽器端到端測試。
+- GitHub Actions 在 Pages 部署前以 Node.js 24 執行完整 Node 測試套件；測試工作只需讀取 repository，Pages 發布權限僅授予後續部署工作。
 - `site/benchmark.html` 可在瀏覽器量測初始世界生成、單區塊網格重建、合成世界網格及 3 秒畫面更新；畫面更新記錄平均 FPS、`requestAnimationFrame` 間隔分布，並在支援的瀏覽器回報 Long Animation Frames 與耗時腳本；量測工具不讀寫遊戲存檔。
 - 遊戲使用 Three.js `Timer` 搭配頁面能見度處理時間步長，陰影使用現行 `PCFShadowMap`。
 - 方塊材質目前是程式化純色；尚未建立外部模型、貼圖或音效資產管線。
