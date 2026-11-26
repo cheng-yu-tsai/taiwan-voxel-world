@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { ISLANDS, WORLD_CONFIG } from './config.js';
 import { VoxelWorld } from './world.js';
 import { syntheticBlockEntries } from './benchmark-data.js';
-import { summarizeFrameIntervals } from './frame-timing.js';
+import { summarizeFrameIntervals, summarizeLongAnimationFrames } from './frame-timing.js';
 
 const $ = selector => document.querySelector(selector);
 const runButton = $('#run-benchmark');
@@ -15,6 +15,47 @@ let isRunning = false;
 
 function nextFrame() {
   return new Promise(resolve => requestAnimationFrame(resolve));
+}
+
+function observeLongAnimationFrames() {
+  const Observer = globalThis.PerformanceObserver;
+  if (typeof Observer !== 'function' || !Array.isArray(Observer.supportedEntryTypes)
+    || !Observer.supportedEntryTypes.includes('long-animation-frame')) {
+    return { supported: false, entries: [], observer: null };
+  }
+  const entries = [];
+  let observer;
+  try {
+    observer = new Observer(list => entries.push(...list.getEntries()));
+    observer.observe({ type: 'long-animation-frame', buffered: false });
+    return { supported: true, entries, observer };
+  } catch {
+    observer?.disconnect();
+    return { supported: false, entries: [], observer: null };
+  }
+}
+
+function finishLongAnimationFrameObservation(collection) {
+  if (collection.observer) {
+    try {
+      collection.entries.push(...collection.observer.takeRecords());
+    } catch {
+      // Long-frame diagnostics are optional and must not fail the main benchmark.
+    }
+    collection.observer.disconnect();
+  }
+  return summarizeLongAnimationFrames(collection.entries, collection.supported);
+}
+
+function describeLongAnimationFrames(summary) {
+  if (!summary.supported) return '無法取得長影格腳本歸因';
+  const frameDetail = summary.frameCount
+    ? `長影格 ${summary.frameCount} 次，最長 ${summary.maxDurationMs.toFixed(1)} ms`
+    : '長影格 0 次';
+  const scriptDetail = summary.topScripts.slice(0, 3)
+    .map(script => `${script.sourceURL} ${script.totalDurationMs.toFixed(1)} ms`)
+    .join('、');
+  return scriptDetail ? `${frameDetail}；腳本累計 ${scriptDetail}` : frameDetail;
 }
 
 function median(values) {
@@ -73,16 +114,23 @@ function renderFor(renderer, scene, camera, durationMs = 3000) {
     let frames = 0;
     let previousFrameTime = null;
     const frameIntervals = [];
+    const longFrameCollection = observeLongAnimationFrames();
     const start = performance.now();
     let animationFrame = 0;
     const finish = result => {
       cancelAnimationFrame(animationFrame);
       document.removeEventListener('visibilitychange', onVisibilityChange);
-      resolve({ ...result, frames, ...summarizeFrameIntervals(frameIntervals) });
+      resolve({
+        ...result,
+        frames,
+        ...summarizeFrameIntervals(frameIntervals),
+        longAnimationFrames: finishLongAnimationFrameObservation(longFrameCollection),
+      });
     };
     const fail = error => {
       cancelAnimationFrame(animationFrame);
       document.removeEventListener('visibilitychange', onVisibilityChange);
+      finishLongAnimationFrameObservation(longFrameCollection);
       reject(error);
     };
     const onVisibilityChange = () => {
@@ -202,12 +250,13 @@ async function runBenchmark() {
         ms: fpsResult.ms,
         detail: fpsResult.suspended
           ? '頁面切至背景，量測略過'
-          : `${fpsResult.fps.toFixed(1)} FPS 平均；rAF 間隔中位數 ${fpsResult.medianMs.toFixed(1)} ms、P95 ${fpsResult.p95Ms.toFixed(1)} ms、最長 ${fpsResult.maxMs.toFixed(1)} ms`,
+          : `${fpsResult.fps.toFixed(1)} FPS 平均；rAF 間隔中位數 ${fpsResult.medianMs.toFixed(1)} ms、P95 ${fpsResult.p95Ms.toFixed(1)} ms、最長 ${fpsResult.maxMs.toFixed(1)} ms；${describeLongAnimationFrames(fpsResult.longAnimationFrames)}`,
         fps: fpsResult.suspended ? null : Number(fpsResult.fps.toFixed(1)),
         frameCount: fpsResult.suspended ? null : fpsResult.frames,
         frameIntervalMedianMs: fpsResult.suspended ? null : fpsResult.medianMs,
         frameIntervalP95Ms: fpsResult.suspended ? null : fpsResult.p95Ms,
         longestFrameIntervalMs: fpsResult.suspended ? null : fpsResult.maxMs,
+        longAnimationFrames: fpsResult.suspended ? null : fpsResult.longAnimationFrames,
       };
       addResult(fpsEntry);
       entries.push(fpsEntry);
@@ -233,6 +282,7 @@ async function runBenchmark() {
       webgl: Boolean(renderer),
       pageVisibility: document.visibilityState,
       fps: fpsResult?.fps === null ? null : fpsResult ? Number(fpsResult.fps.toFixed(1)) : null,
+      longAnimationFrameDiagnosticsAvailable: fpsResult?.longAnimationFrames?.supported ?? null,
     };
     $('#environment').textContent = JSON.stringify(environment, null, 2);
     report = { createdAt: new Date().toISOString(), environment, results: entries };

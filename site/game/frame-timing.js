@@ -18,3 +18,36 @@ export function summarizeFrameIntervals(intervals) {
     maxMs: ordered[ordered.length - 1],
   };
 }
+
+export function summarizeLongAnimationFrames(entries, supported = true) {
+  if (!Array.isArray(entries) || typeof supported !== 'boolean') {
+    throw new TypeError('Long animation frame data must be an array with a support flag');
+  }
+  if (!supported) {
+    return { supported: false, frameCount: null, maxDurationMs: null, topScripts: [] };
+  }
+
+  const scriptTotals = new Map();
+  let maxDurationMs = null;
+  for (const entry of entries) {
+    if (!entry || typeof entry !== 'object' || !Number.isFinite(entry.duration) || entry.duration < 0
+      || (entry.scripts !== undefined && !Array.isArray(entry.scripts))) {
+      throw new TypeError('Long animation frame entries must include valid durations and script lists');
+    }
+    maxDurationMs = maxDurationMs === null ? entry.duration : Math.max(maxDurationMs, entry.duration);
+    for (const script of entry.scripts ?? []) {
+      if (!script || typeof script !== 'object' || typeof script.sourceURL !== 'string'
+        || !Number.isFinite(script.duration) || script.duration < 0) {
+        throw new TypeError('Long animation frame scripts must include a source URL and valid duration');
+      }
+      const total = scriptTotals.get(script.sourceURL) ?? { sourceURL: script.sourceURL, sampleCount: 0, totalDurationMs: 0 };
+      total.sampleCount++;
+      total.totalDurationMs += script.duration;
+      scriptTotals.set(script.sourceURL, total);
+    }
+  }
+
+  const topScripts = [...scriptTotals.values()].sort((left, right) =>
+    right.totalDurationMs - left.totalDurationMs || left.sourceURL.localeCompare(right.sourceURL));
+  return { supported: true, frameCount: entries.length, maxDurationMs, topScripts };
+}

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { summarizeFrameIntervals } from '../site/game/frame-timing.js';
+import { summarizeFrameIntervals, summarizeLongAnimationFrames } from '../site/game/frame-timing.js';
 
 test('returns null timing values when no frames were sampled', () => {
   assert.deepEqual(summarizeFrameIntervals([]), {
@@ -37,4 +37,54 @@ test('rejects non-array, negative, and non-finite frame intervals', () => {
   assert.throws(() => summarizeFrameIntervals([-0.1]), TypeError);
   assert.throws(() => summarizeFrameIntervals([NaN]), TypeError);
   assert.throws(() => summarizeFrameIntervals([Infinity]), TypeError);
+});
+
+test('distinguishes unsupported long-frame timing from a supported empty sample', () => {
+  assert.deepEqual(summarizeLongAnimationFrames([], false), {
+    supported: false,
+    frameCount: null,
+    maxDurationMs: null,
+    topScripts: [],
+  });
+  assert.deepEqual(summarizeLongAnimationFrames([]), {
+    supported: true,
+    frameCount: 0,
+    maxDurationMs: null,
+    topScripts: [],
+  });
+  assert.deepEqual(summarizeLongAnimationFrames([{ duration: 63 }]), {
+    supported: true,
+    frameCount: 1,
+    maxDurationMs: 63,
+    topScripts: [],
+  });
+});
+
+test('summarizes long frames and ranks scripts by accumulated duration', () => {
+  const frames = [
+    { duration: 76, scripts: [{ sourceURL: '/game.js', duration: 8 }, { sourceURL: 'three.js', duration: 12 }] },
+    { duration: 108, scripts: [{ sourceURL: '/game.js', duration: 30 }, { sourceURL: 'three.js', duration: 4 }] },
+    { duration: 51, scripts: [] },
+  ];
+  const original = structuredClone(frames);
+
+  assert.deepEqual(summarizeLongAnimationFrames(frames), {
+    supported: true,
+    frameCount: 3,
+    maxDurationMs: 108,
+    topScripts: [
+      { sourceURL: '/game.js', sampleCount: 2, totalDurationMs: 38 },
+      { sourceURL: 'three.js', sampleCount: 2, totalDurationMs: 16 },
+    ],
+  });
+  assert.deepEqual(frames, original);
+});
+
+test('rejects malformed long-frame entries and script timing data', () => {
+  assert.throws(() => summarizeLongAnimationFrames(null), TypeError);
+  assert.throws(() => summarizeLongAnimationFrames([{ duration: -1 }]), TypeError);
+  assert.throws(() => summarizeLongAnimationFrames([{ duration: NaN }]), TypeError);
+  assert.throws(() => summarizeLongAnimationFrames([{ duration: 60, scripts: {} }]), TypeError);
+  assert.throws(() => summarizeLongAnimationFrames([{ duration: 60, scripts: [{ sourceURL: '/game.js', duration: Infinity }] }]), TypeError);
+  assert.throws(() => summarizeLongAnimationFrames([], 'unsupported'), TypeError);
 });
