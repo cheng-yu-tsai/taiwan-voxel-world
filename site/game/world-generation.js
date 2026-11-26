@@ -6,6 +6,7 @@ export function generateDefaultWorldContent(world) {
   world.seedPenghuLandmark();
   world.seedKinmenLandmark();
   world.seedMatsuLandmark();
+  world.seedGreenIslandCoastalRocks();
   world.seedIslandTrails();
   world.seedTaiwanStreet();
 }

@@ -12,6 +12,7 @@ const windLionShape = [
   [1, 2, 0],
 ];
 const matsuColumnHeights = [3, 2];
+const greenIslandRockHeights = [2, 3];
 
 export function penghuBasaltColumnEntries() {
   const island = ISLANDS.find(candidate => candidate.id === 'penghu');
@@ -62,6 +63,24 @@ export function matsuStoneTowerEntries() {
     const baseY = terrainHeight(island, x + 0.5, z + 0.5);
     for (let offset = 0; offset < height; offset++) entries.push([`${x},${baseY + offset},${z}`, 'stone']);
     if (dx === 0) entries.push([`${x},${baseY + height},${z}`, 'sign']);
+  });
+
+  return entries;
+}
+
+export function greenIslandCoastalRockEntries() {
+  const island = ISLANDS.find(candidate => candidate.id === 'green');
+  if (!island || island.type !== 'ellipse') throw new Error('Green Island ellipse is not configured');
+  const landform = island.shape;
+  const originX = Math.floor(landform.x) - 1;
+  const originZ = Math.floor(landform.z - landform.rz);
+  const entries = [];
+
+  greenIslandRockHeights.forEach((height, dx) => {
+    const x = originX + dx, z = originZ;
+    if (!isIslandPoint(island, x + 0.5, z + 0.5)) throw new Error('Green Island coastal rock falls outside its island');
+    const baseY = terrainHeight(island, x + 0.5, z + 0.5);
+    for (let offset = 0; offset < height; offset++) entries.push([`${x},${baseY + offset},${z}`, 'stone']);
   });
 
   return entries;

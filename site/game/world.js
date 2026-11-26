@@ -14,6 +14,7 @@ import {
 } from './street-props.js';
 import { greenIslandTrailEntries, orchidIslandTrailEntries } from './island-trails.js';
 import {
+  greenIslandCoastalRockEntries,
   kinmenWindLionEntries,
   matsuStoneTowerEntries,
   penghuBasaltColumnEntries,
@@ -140,6 +141,10 @@ export class VoxelWorld {
 
   seedMatsuLandmark(){
     for(const [key,type] of matsuStoneTowerEntries()) this.blocks.set(key,type);
+  }
+
+  seedGreenIslandCoastalRocks(){
+    for(const [key,type] of greenIslandCoastalRockEntries()) this.blocks.set(key,type);
   }
 
   buildShop(x0,z0,width,depth,wall,roof,sign){

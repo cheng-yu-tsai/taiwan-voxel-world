@@ -2,8 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ISLANDS } from '../site/game/config.js';
 import { isIslandPoint } from '../site/game/island-geometry.js';
+import { greenIslandTrailEntries } from '../site/game/island-trails.js';
 import { terrainHeight } from '../site/game/terrain.js';
 import {
+  greenIslandCoastalRockEntries,
   kinmenWindLionEntries,
   matsuStoneTowerEntries,
   penghuBasaltColumnEntries,
@@ -90,4 +92,36 @@ test('generates a stone landmark tower on Matsu land with a sign at its top', ()
     }
   }
   assert.equal(entries.filter(([, type]) => type === 'sign').length, 1);
+});
+
+test('generates deterministic Green Island coastal rocks above land and clear of the trail', () => {
+  const green = ISLANDS.find(island => island.id === 'green');
+  const entries = greenIslandCoastalRockEntries();
+  const trail = new Set(greenIslandTrailEntries().map(([key]) => {
+    const [x, , z] = key.split(',');
+    return `${x},${z}`;
+  }));
+  assert.deepEqual(greenIslandCoastalRockEntries(), entries);
+  assert.equal(entries.length, 5);
+  assert.ok(entries.every(([, type]) => type === 'stone'));
+  assert.equal(new Set(entries.map(([key]) => key)).size, entries.length);
+
+  const columns = new Map();
+  for (const [key] of entries) {
+    const [x, y, z] = key.split(',').map(Number);
+    const columnKey = `${x},${z}`;
+    if (!columns.has(columnKey)) columns.set(columnKey, []);
+    columns.get(columnKey).push(y);
+    assert.ok(isIslandPoint(green, x + 0.5, z + 0.5));
+    assert.ok(!trail.has(columnKey));
+  }
+  assert.equal(columns.size, 2);
+  assert.equal(columns.has(`${Math.floor(green.spawn.x)},${Math.floor(green.spawn.z)}`), false);
+  for (const [columnKey, levels] of columns) {
+    const [x, z] = columnKey.split(',').map(Number);
+    const baseY = terrainHeight(green, x + 0.5, z + 0.5);
+    levels.sort((a, b) => a - b);
+    assert.equal(levels[0], baseY);
+    assert.deepEqual(levels, Array.from({ length: levels.length }, (_, index) => baseY + index));
+  }
 });
