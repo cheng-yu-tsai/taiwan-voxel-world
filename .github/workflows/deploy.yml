@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: 24
       - name: Run Node test suite
-        run: node --experimental-test-coverage --test tests/*.test.mjs
+        run: node --experimental-test-coverage --test-coverage-lines=80 --test-coverage-branches=80 --test-coverage-functions=80 --test tests/*.test.mjs
 
   deploy:
     needs: test
