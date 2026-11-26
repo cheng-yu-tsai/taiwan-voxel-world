@@ -47,11 +47,14 @@ export class GameUI {
         this.showToast('世界已回到初始樣子');
       }
     });
-    document.querySelectorAll('.touch-pad [data-key]').forEach(button=>{
+    document.querySelectorAll('.touch-controls [data-key]').forEach(button=>{
       const press=event=>{event.preventDefault();button.setPointerCapture?.(event.pointerId);this.hooks.touchKey?.(button.dataset.key,true);};
       const release=event=>{event.preventDefault();this.hooks.touchKey?.(button.dataset.key,false);};
       button.addEventListener('pointerdown',press);button.addEventListener('pointerup',release);
       button.addEventListener('pointercancel',release);button.addEventListener('lostpointercapture',release);
+    });
+    document.querySelectorAll('.touch-actions [data-action]').forEach(button=>{
+      button.addEventListener('click',()=>this.hooks.touchAction?.(button.dataset.action));
     });
   }
 

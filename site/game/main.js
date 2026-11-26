@@ -56,6 +56,10 @@ const ui=new GameUI({
   getSensitivity:()=>player?.sensitivity??CONTROL_DEFAULTS.sensitivity,
   setQuality:value=>{quality=value;setQuality();},
   touchKey:(key,down)=>player?.setTouchKey(key,down),
+  touchAction:action=>{
+    if(action==='mine')interact(0);
+    if(action==='place')interact(2);
+  },
   reset:()=>{
     if(!world||!player)return;
     world.reset();player.teleport(ISLANDS[0]);player.position.set(WORLD_CONFIG.spawn.x,world.getSpawnPoint('main').y,WORLD_CONFIG.spawn.z);
