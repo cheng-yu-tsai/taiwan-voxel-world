@@ -24,6 +24,14 @@
 }
 @media(pointer:fine){.touch-hint{display:none}}
 
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 560px) {
+  .left-panel{display:none}
+  .touch-pad.touch-controls{bottom:max(90px,calc(env(safe-area-inset-bottom, 0px) + 82px))}
+  .touch-actions.touch-controls{bottom:max(90px,calc(env(safe-area-inset-bottom, 0px) + 82px));grid-template-columns:repeat(2, 46px);gap:6px}
+  .bottom-hud{bottom:max(8px,env(safe-area-inset-bottom, 0px))}
+  .action-hint{display:none}
+}
+
 .save-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:18px}
 .save-actions .secondary-button{background:#ffffff0b;color:#e8eddf;border:1px solid #ffffff2b}
 .save-actions .secondary-button:hover{background:#ffffff19}
